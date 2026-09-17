@@ -16,8 +16,9 @@
 - AI模块：支持本地Ollama部署大模型 / 调用云端大模型API
 - 文件处理：POI（Word/PDF解析）、图片OCR
 - 报表：ECharts可视化、POI导出Excel、iText导出PDF
-
+  
 ## 📂 项目框架目录结构
+```
 student-practice-ai-evaluation-system
 ├── frontend/ # 前端 Vue 脚手架工程
 │ ├── src/
@@ -39,3 +40,4 @@ student-practice-ai-evaluation-system
 ├── docs/ # 项目文档、需求说明书、数据库设计
 ├── .gitignore
 └── README.md
+```
