@@ -10,11 +10,11 @@
 
 ## 🛠️ 技术脚手架（Tech Stack）
 > 前后端分离架构
-- 前端脚手架：**Vue3 + Vite + Element Plus + Pinia**
-- 后端脚手架：**SpringBoot 3.x（或FastAPI Python）**
-- 数据库：MySQL8.0
-- AI模块：调用云端大模型API
-- 文件处理：POI（Word/PDF解析）、图片OCR
+- 前端脚手架：**Vue3 + Vite + Element Plus + Pinia** (陈欣)
+- 后端脚手架：**SpringBoot 3.x（或FastAPI Python）** （张杰）
+- 数据库：MySQL8.0 （宋金燚）
+- AI模块：调用云端大模型API （周林）
+- 文件处理：POI（Word/PDF解析）、图片OCR 
 - 报表：ECharts可视化、POI导出Excel、iText导出PDF
   
 ## 📂 项目框架目录结构
