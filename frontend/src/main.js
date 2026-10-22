@@ -10,3 +10,5 @@ app.use(createPinia())
 app.use(ElementPlus)
 app.use(router)
 app.mount('#app')
+
+// 注释
