@@ -2,22 +2,17 @@
   <div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f5f5;">
     <el-card style="width:420px;padding:20px;">
       <h2 style="text-align:center;margin-bottom:24px;">软件实训AI检查评价系统</h2>
-      <el-form :model="loginForm">
+      <el-form :model="form" @keyup.enter="handleLogin">
         <el-form-item label="账号">
-          <el-input v-model="loginForm.username"></el-input>
+          <el-input v-model="form.username" placeholder="teacher01 / stu01 / admin" />
         </el-form-item>
         <el-form-item label="密码">
-          <el-input v-model="loginForm.password" type="password"></el-input>
-        </el-form-item>
-        <el-form-item label="角色">
-          <el-select v-model="loginForm.role">
-            <el-option label="学生" value="student"></el-option>
-            <el-option label="教师" value="teacher"></el-option>
-            <el-option label="管理员" value="admin"></el-option>
-          </el-select>
+          <el-input v-model="form.password" type="password" show-password />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" style="width:100%" @click="handleLogin">登录系统</el-button>
+          <el-button type="primary" style="width:100%" :loading="loading" @click="handleLogin">
+            登录系统
+          </el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -26,43 +21,29 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/useUserStore'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
+const loading = ref(false)
+const form = ref({ username: '', password: '' })
 
-const loginForm = ref({
-  username: '',
-  password: '',
-  role: 'student'
-})
-
-const handleLogin = () => {
-  const userList = [
-    { username: 'student', password: '123456', role: 'student' },
-    { username: 'teacher', password: '123456', role: 'teacher' },
-    { username: 'admin', password: '123456', role: 'admin' }
-  ]
-  const findUser = userList.find(item => {
-    return item.username === loginForm.value.username
-      && item.password === loginForm.value.password
-      && item.role === loginForm.value.role
-  })
-
-  if (findUser) {
-    userStore.setUserInfo(findUser)
-    userStore.setToken('mock-token-123456')
-    // ========== 根据角色跳转到对应首页 ==========
-    if (findUser.role === 'student') {
-      router.push('/student/task')
-    } else if (findUser.role === 'teacher') {
-      router.push('/teacher/taskManage')
-    } else if (findUser.role === 'admin') {
-      router.push('/admin/user')
-    }
-  } else {
-    alert('账号、密码或角色选择错误！')
+const handleLogin = async () => {
+  if (!form.value.username || !form.value.password) {
+    return ElMessage.warning('请输入账号和密码')
+  }
+  loading.value = true
+  try {
+    await userStore.login(form.value)
+    const redirect = route.query.redirect || '/'
+    await router.replace(redirect)
+  } catch (e) {
+    ElMessage.error(e.message || '登录失败')
+  } finally {
+    loading.value = false
   }
 }
 </script>
