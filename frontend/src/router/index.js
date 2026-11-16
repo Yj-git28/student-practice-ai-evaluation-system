@@ -4,8 +4,7 @@ import { usePermissionStore } from '@/stores/usePermissionStore'
 
 // 只放不需要登录的静态路由
 const constantRoutes = [
-  { path: '/', redirect: '/login' },  // 新增根重定向
-  { path: '/login', name: 'Login', component: () => import('@/Login.vue') },  // 修改路径
+  { path: '/login', name: 'Login', component: () => import('@/views/Login.vue') },
   { path: '/403',  name: 'NoPermission', component: () => import('@/views/403.vue') }
 ]
 
