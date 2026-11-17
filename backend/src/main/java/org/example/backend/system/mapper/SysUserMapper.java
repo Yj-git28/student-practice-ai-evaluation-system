@@ -38,10 +38,10 @@ public class SysUserMapper {
                 .optional();
     }
 
-    /** 按 userId 查角色（单角色模型，最多 1 行） */
+    /** 按 userId 查角色（单角色模型，最多 1 行）。数据范围来自 sys_role.data_scope，不再按 roleCode 硬编码 */
     public Optional<SysRole> selectRoleByUserId(Long userId) {
         return jdbc.sql("""
-                SELECT r.role_id, r.role_name, r.role_code
+                SELECT r.role_id, r.role_name, r.role_code, r.data_scope
                 FROM sys_user u
                 INNER JOIN sys_role r ON r.role_id = u.role_id
                 WHERE u.user_id = :userId
@@ -49,6 +49,13 @@ public class SysUserMapper {
                 .param("userId", userId)
                 .query(SysRole.class)
                 .optional();
+    }
+
+    /** 权限刷新接口用：拿到全量用户，逐个失效权限缓存 */
+    public java.util.List<Long> selectAllUserIds() {
+        return jdbc.sql("SELECT user_id FROM sys_user")
+                .query(Long.class)
+                .list();
     }
 
     /** 权限变更后按角色反查受影响用户，用于精准清缓存 */

@@ -21,8 +21,8 @@ public class LoginUser implements UserDetails {
     private Set<String> roles = new HashSet<>();
     /** 权限码集合，如 ["training:list","training:publish"]。对应 sys_permission.perm_code */
     private Set<String> permissions = new HashSet<>();
-    /** 数据范围：ALL / TEACHER_SELF / STUDENT_SELF，第 3.6 步用 */
-    private String dataScope;
+    /** 数据范围：1 全部 / 2 本部门 / 3 本人，直接读 sys_role.data_scope */
+    private Integer dataScope = DataScope.SELF;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -39,9 +39,8 @@ public class LoginUser implements UserDetails {
     @Override public boolean isAccountNonExpired() { return true; }
     @Override public boolean isAccountNonLocked()  { return true; }
     @Override public boolean isCredentialsNonExpired() { return true; }
-    @Override public boolean isEnabled()           { return true; }  // 表里没有 status 字段，恒 true
+    @Override public boolean isEnabled()           { return true; }
 
-    // 其余 getter/setter 省略
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
     public void setUsername(String username) { this.username = username; }
@@ -60,6 +59,6 @@ public class LoginUser implements UserDetails {
     public void setRoles(Set<String> roles) { this.roles = roles; }
     public Set<String> getPermissions() { return permissions; }
     public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
-    public String getDataScope() { return dataScope; }
-    public void setDataScope(String dataScope) { this.dataScope = dataScope; }
+    public Integer getDataScope() { return dataScope; }
+    public void setDataScope(Integer dataScope) { this.dataScope = dataScope; }
 }

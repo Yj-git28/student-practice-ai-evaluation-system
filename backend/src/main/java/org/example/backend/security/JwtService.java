@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
@@ -23,10 +24,15 @@ public class JwtService {
         this.expireSeconds = expireSeconds;
     }
 
+    /**
+     * 签发 token。写入 jti（JWT ID）：logout 时把这个 jti 拉黑，
+     * 同一个 token 后续请求在 JwtAuthFilter 里直接被拒。
+     */
     public String createToken(Long userId, String username, String roleCode) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expireSeconds * 1000);
         return Jwts.builder()
+                .id(UUID.randomUUID().toString())          // jti
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", roleCode)

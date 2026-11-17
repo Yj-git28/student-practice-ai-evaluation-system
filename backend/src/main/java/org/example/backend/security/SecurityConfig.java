@@ -38,7 +38,9 @@ public class SecurityConfig {
                 .cors(cors -> {})   // 复用已有的 CorsConfig
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/test").permitAll()
+                        // /error 必须放行：容器把异常转发到 /error 时若是 401，
+                        // 所有 500 都会被伪装成“未登录”，前端永远看不到真实错误
+                        .requestMatchers("/api/auth/login", "/test", "/error").permitAll()
                         .anyRequest().authenticated()     // ① 兜底：必须登录
                 )
                 .exceptionHandling(ex -> ex

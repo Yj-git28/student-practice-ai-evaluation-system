@@ -1,5 +1,6 @@
 package org.example.backend.system.service;
 
+import org.example.backend.security.DataScope;
 import org.example.backend.security.LoginUser;
 import org.example.backend.system.entity.SysPermission;
 import org.example.backend.system.entity.SysRole;
@@ -36,11 +37,12 @@ public class PermissionService {
         SysRole role = userMapper.selectRoleByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("用户未绑定角色: " + userId));
 
-        List<SysPermission> perms = permissionMapper.selectByUserId(userId);
-        Set<String> codes = perms.stream()
-                .map(SysPermission::getPermCode)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
+        // 角色权限 ∪ 个人附加权限（sys_user_permission）
+        Set<String> codes = new LinkedHashSet<>();
+        List<SysPermission> rolePerms = permissionMapper.selectByUserId(userId);
+        List<SysPermission> personalPerms = permissionMapper.selectPersonalByUserId(userId);
+        rolePerms.forEach(p -> addCode(codes, p));
+        personalPerms.forEach(p -> addCode(codes, p));
 
         LoginUser lu = new LoginUser();
         lu.setUserId(user.getUserId());
@@ -53,19 +55,17 @@ public class PermissionService {
         lu.setRoleName(role.getRoleName());
         lu.setRoles(Set.of(role.getRoleCode()));
         lu.setPermissions(codes);
-        lu.setDataScope(resolveScope(role.getRoleCode()));
+        // 直接读 sys_role.data_scope（1 全部 / 2 本部门 / 3 本人），不再按 roleCode 硬编码
+        lu.setDataScope(DataScope.normalize(role.getDataScope()));
 
         cache.put(userId, lu);
         return lu;
     }
 
-    /** 表里没有 data_scope 字段，先用角色码集中映射一处，避免散落 */
-    private String resolveScope(String roleCode) {
-        return switch (roleCode) {
-            case "ADMIN"   -> "ALL";
-            case "TEACHER" -> "TEACHER_SELF";
-            default        -> "STUDENT_SELF";
-        };
+    private void addCode(Set<String> codes, SysPermission p) {
+        if (p != null && p.getPermCode() != null && !p.getPermCode().isBlank()) {
+            codes.add(p.getPermCode());
+        }
     }
 
     public List<SysPermission> menusOf(Long userId) {
@@ -74,5 +74,15 @@ public class PermissionService {
 
     public void evict(Long userId) {
         cache.invalidate(userId);
+    }
+
+    /**
+     * 手动刷新全部用户的权限缓存（POST /api/system/permission/refresh）。
+     * 返回本次刷新的用户数。
+     */
+    public int refreshAll() {
+        List<Long> userIds = userMapper.selectAllUserIds();
+        userIds.forEach(cache::invalidate);
+        return userIds.size();
     }
 }

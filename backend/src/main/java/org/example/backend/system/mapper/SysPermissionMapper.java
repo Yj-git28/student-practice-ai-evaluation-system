@@ -31,6 +31,21 @@ public class SysPermissionMapper {
                 .list();
     }
 
+    /** 个人附加权限（sys_user_permission），与角色权限取并集 */
+    public List<SysPermission> selectPersonalByUserId(Long userId) {
+        return jdbc.sql("""
+                SELECT DISTINCT p.permission_id, p.parent_id, p.perm_name, p.perm_type,
+                                p.perm_code, p.perm_path, p.icon, p.sort
+                FROM sys_user_permission up
+                INNER JOIN sys_permission p ON p.permission_id = up.permission_id
+                WHERE up.user_id = :userId
+                ORDER BY p.sort ASC, p.permission_id ASC
+                """)
+                .param("userId", userId)
+                .query(SysPermission.class)
+                .list();
+    }
+
     /** 只取菜单（perm_type = 1），用于前端生成路由和侧边栏 */
     public List<SysPermission> selectMenusByUserId(Long userId) {
         return jdbc.sql("""

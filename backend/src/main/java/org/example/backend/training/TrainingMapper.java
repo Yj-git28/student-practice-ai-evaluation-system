@@ -23,7 +23,7 @@ public class TrainingMapper {
         return cnt != null && cnt > 0;
     }
 
-    /** 发布：状态置 1。若实库没有 status 列，改成你表里真实的发布标志列 */
+    /** 发布：status 置 1（0 未发布 / 1 已发布，与 training.status 语义一致） */
     public int publish(Long trainingId) {
         return jdbc.sql("UPDATE training SET status = 1 WHERE training_id = :tid")
                 .param("tid", trainingId).update();
@@ -34,11 +34,12 @@ public class TrainingMapper {
                 .param("tid", trainingId).update();
     }
 
-    /** 教师口径统计；teacherId 为 null 时统计全量（ADMIN） */
+    /** 教师口径统计；teacherId 为 null 时统计全量（ADMIN / 数据范围=1） */
     public java.util.Map<String, Object> stat(Long teacherId) {
+        // COALESCE：空表时 SUM 返回 NULL，前端会拿到 null 而不是 0
         String sql = teacherId == null
-                ? "SELECT COUNT(1) AS total, SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS published FROM training"
-                : "SELECT COUNT(1) AS total, SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END) AS published FROM training WHERE teacher_id = :tid";
+                ? "SELECT COUNT(1) AS total, COALESCE(SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END), 0) AS published FROM training"
+                : "SELECT COUNT(1) AS total, COALESCE(SUM(CASE WHEN status = 1 THEN 1 ELSE 0 END), 0) AS published FROM training WHERE teacher_id = :tid";
         JdbcClient.StatementSpec spec = jdbc.sql(sql);
         if (teacherId != null) spec = spec.param("tid", teacherId);
         return spec.query().singleRow();

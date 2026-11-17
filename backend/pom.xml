@@ -64,6 +64,13 @@
             <artifactId>lombok</artifactId>
             <optional>true</optional>
         </dependency>
+
+        <!-- sys_log 审计切面：@Aspect 需要 AspectJ weaver（spring-aop 已随 spring-context 引入） -->
+        <dependency>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.9.20.1</version>
+        </dependency>
         <!-- 参数校验（可选，推荐加上） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

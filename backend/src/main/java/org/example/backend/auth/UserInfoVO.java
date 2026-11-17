@@ -16,7 +16,7 @@ public class UserInfoVO {
     private Set<String> roles;
     private Set<String> permissions;
     private List<SysPermission> menus;
-    private String dataScope;
+    private Integer dataScope;
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
@@ -38,6 +38,6 @@ public class UserInfoVO {
     public void setPermissions(Set<String> permissions) { this.permissions = permissions; }
     public List<SysPermission> getMenus() { return menus; }
     public void setMenus(List<SysPermission> menus) { this.menus = menus; }
-    public String getDataScope() { return dataScope; }
-    public void setDataScope(String dataScope) { this.dataScope = dataScope; }
+    public Integer getDataScope() { return dataScope; }
+    public void setDataScope(Integer dataScope) { this.dataScope = dataScope; }
 }

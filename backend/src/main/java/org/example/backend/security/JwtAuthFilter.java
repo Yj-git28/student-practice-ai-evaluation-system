@@ -20,10 +20,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final PermissionService permissionService;
+    private final TokenBlacklistService blacklist;
 
-    public JwtAuthFilter(JwtService jwtService, PermissionService permissionService) {
+    public JwtAuthFilter(JwtService jwtService, PermissionService permissionService,
+                         TokenBlacklistService blacklist) {
         this.jwtService = jwtService;
         this.permissionService = permissionService;
+        this.blacklist = blacklist;
     }
 
     @Override
@@ -36,6 +39,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = header.substring(7);
             try {
                 Claims claims = jwtService.parse(token);
+
+                // 已退出登录的 token：jti 在黑名单里，直接当未登录处理
+                if (blacklist.isRevoked(claims.getId())) {
+                    SecurityContextHolder.clearContext();
+                    chain.doFilter(request, response);
+                    return;
+                }
+
                 Long userId = Long.valueOf(claims.getSubject());
 
                 // 每次请求都从缓存/库里重建 LoginUser —— 权限改了立刻生效

@@ -1,6 +1,7 @@
 package org.example.backend.system.service;
 
 import org.example.backend.common.BizException;
+import org.example.backend.system.log.SysLog;
 import org.example.backend.system.mapper.SysRolePermissionMapper;
 import org.example.backend.system.mapper.SysUserMapper;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class RolePermissionService {
         this.permissionService = permissionService;
     }
 
+    @SysLog(type = "GRANT_PERM", content = "修改角色权限")
     @Transactional(rollbackFor = Exception.class)
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         if (roleId == null) throw new BizException(4001, "角色不能为空");
@@ -35,6 +37,7 @@ public class RolePermissionService {
         afterCommit(() -> userMapper.selectUserIdsByRoleId(roleId).forEach(permissionService::evict));
     }
 
+    @SysLog(type = "CHANGE_ROLE", content = "修改用户角色")
     @Transactional(rollbackFor = Exception.class)
     public void changeUserRole(Long userId, Long roleId) {
         if (userId == null || roleId == null) throw new BizException(4001, "参数不能为空");
