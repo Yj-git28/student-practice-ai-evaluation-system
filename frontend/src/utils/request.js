@@ -22,8 +22,11 @@ service.interceptors.response.use(
       router.replace('/login')
     } else if (status === 403) {
       ElMessage.error(err.response?.data?.msg || '没有操作权限')
+    } else if (status === 500) {
+      // 服务端错误：展示后端返回的具体 msg，而不是笼统当成登录过期
+      ElMessage.error(err.response?.data?.msg || '服务器开小差了，请稍后重试')
     } else {
-      ElMessage.error(err.response?.data?.msg || '接口请求失败')
+      ElMessage.error(err.response?.data?.msg || '接口请求失败，请稍后重试')
     }
     return Promise.reject(err)
   }

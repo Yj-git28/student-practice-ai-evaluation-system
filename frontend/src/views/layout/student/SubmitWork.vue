@@ -10,7 +10,7 @@
       <el-button type="primary">选择实训报告/截图文件（PDF Word 图片）</el-button>
     </el-upload>
     <div style="margin:12px 0">
-      <el-button type="success" @click="submitWork">确认提交成果</el-button>
+      <el-button type="success" v-has-perm="'training:submit'" @click="submitWork">确认提交成果</el-button>
     </div>
 
     <el-divider></el-divider>

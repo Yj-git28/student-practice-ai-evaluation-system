@@ -1,6 +1,6 @@
 <template>
 <el-card>
-  <template #header>班级实训数据统计 <el-button type="primary">导出Excel/PDF报表</el-button></template>
+  <template #header>班级实训数据统计 <el-button type="primary" v-has-perm:all="['training:list','evaluation:list']">导出Excel/PDF报表</el-button></template>
   <el-row :gutter="20">
     <el-col :span="12">
       <div ref="chartRef" style="height:320px"></div>

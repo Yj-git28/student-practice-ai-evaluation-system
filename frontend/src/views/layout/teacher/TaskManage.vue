@@ -3,8 +3,8 @@
     <div class="header">
       <h3>实训任务管理</h3>
       <div class="btn-group">
-        <!-- 新增任务：权限码 training:add -->
-        <el-button type="primary" v-has-perm="'training:add'">新增任务</el-button>
+        <!-- 新增任务：权限码 training:add 后端尚未定义，暂不挂指令，待补码后再加 -->
+        <el-button type="primary" @click="dialogVisible=true">新增任务</el-button>
       </div>
     </div>
 
@@ -15,10 +15,10 @@
       <el-table-column prop="status" label="状态" />
       <el-table-column label="操作">
         <template #default="scope">
-          <!-- 编辑：training:edit -->
-          <el-button size="small" type="warning" v-has-perm="'training:edit'">编辑</el-button>
-          <!-- 删除：training:delete -->
-          <el-button size="small" type="danger" v-has-perm="'training:delete'">删除</el-button>
+          <!-- 编辑：training:edit 后端尚未定义，暂不挂指令 -->
+          <el-button size="small" type="warning" @click="dialogVisible=true">编辑</el-button>
+          <!-- 删除：training:delete 后端尚未定义，暂不挂指令 -->
+          <el-button size="small" type="danger">删除</el-button>
           <!-- 发布实训：training:publish -->
           <el-button size="small" type="success" v-has-perm="'training:publish'">发布实训</el-button>
         </template>
@@ -40,7 +40,8 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible=false">取消</el-button>
-        <el-button type="primary" v-has-perm="'training:edit'">保存</el-button>
+        <!-- 保存：training:edit 后端尚未定义，暂不挂指令 -->
+        <el-button type="primary" @click="dialogVisible=false">保存</el-button>
       </template>
     </el-dialog>
   </div>

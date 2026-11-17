@@ -12,7 +12,13 @@
         router
       >
         <template v-for="m in permStore.menus" :key="m.permissionId">
-          <el-menu-item :index="m.permPath">
+          <el-sub-menu v-if="m.children && m.children.length" :index="m.permPath || ('sub-' + m.permissionId)">
+            <template #title>{{ m.permName }}</template>
+            <template v-for="c in m.children" :key="c.permissionId">
+              <el-menu-item v-if="c.permPath" :index="c.permPath">{{ c.permName }}</el-menu-item>
+            </template>
+          </el-sub-menu>
+          <el-menu-item v-else :index="m.permPath">
             <span>{{ m.permName }}</span>
           </el-menu-item>
         </template>
