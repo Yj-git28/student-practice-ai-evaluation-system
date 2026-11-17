@@ -29,7 +29,7 @@ router.beforeEach(async (to, from, next) => {
   // 2.已经登录访问登录页，跳首页
   if (to.path === '/login') return next('/')
 
-  //3.有token，但是动态路由还没加载（刷新页面/第一次登录）
+  // 3.有token，但是动态路由还没加载（刷新页面/第一次登录）
   if (!permStore.routesLoaded) {
     try {
       const info = await userStore.getInfo()
@@ -38,7 +38,15 @@ router.beforeEach(async (to, from, next) => {
       // 404兜底，必须addRoute之后添加
       router.addRoute({ path: '/:pathMatch(.*)*', redirect: '/403' })
       permStore.routesLoaded = true
-      // 关键：replace:true重新触发一次路由匹配，防止白屏
+
+      // 关键修复：登录后或停留在 /、/403 时，直接去第一个有权限的菜单
+      // 否则 next({ ...to }) 会把 /403 原样重放，形成"进 403 就出不来"的死循环
+      const firstPath = permStore.menus.length ? permStore.menus[0].permPath : ''
+      if (to.path === '/' || to.path === '/403') {
+        return next({ path: firstPath || '/403', replace: true })
+      }
+
+      // 其它地址：replace:true 重新匹配一次，防止白屏
       return next({ ...to, replace: true })
     } catch (e) {
       userStore.logout()
@@ -46,6 +54,7 @@ router.beforeEach(async (to, from, next) => {
       return next(`/login?redirect=${encodeURIComponent(to.fullPath)}`)
     }
   }
+
   next()
 })
 

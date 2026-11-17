@@ -10,7 +10,8 @@ public class CorsConfig implements WebMvcConfigurer {
     public void addCorsMappings(CorsRegistry registry) {
 //        注释
         registry.addMapping("/**")
-                .allowedOrigins("http://localhost:5173")
+                // 用 pattern 而不是固定端口：Vite 端口被占用时会自动换到 5174/5175
+                .allowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*")
                 .allowedMethods("GET","POST","PUT","DELETE","OPTIONS")
                 .allowCredentials(true)
                 .maxAge(3600);
