@@ -1,0 +1,6 @@
+2026/11/18 16:06:28 [emerg] 22948#12812: unknown directive "﻿#" in E:\SE\student-practice-ai-evaluation-system\deploy\nginx/conf/nginx.conf:15
+2026/11/18 16:55:08 [emerg] 39580#40800: CreateFile() "C:\Users\Administrator\AppData\Local\Temp\nginx-ssl\mime.types" failed (2: The system cannot find the file specified) in C:\Users\Administrator\AppData\Local\Temp\nginx-ssl\nginx.conf:8
+2026/11/18 16:55:30 [emerg] 15856#11828: cannot load certificate "C:/Users/Administrator/AppData/Local/Temp/nginx-ssl/cert.pem": BIO_new_file() failed (SSL: error:80000002:system library::No such file or directory:calling fopen(C:/Users/Administrator/AppData/Local/Temp/nginx-ssl/cert.pem, r) error:10000080:BIO routines::no such file)
+2026/11/18 16:56:07 [emerg] 36824#15844: CreateFile() "C:\Users\Administrator\AppData\Local\Temp
+ginx-ssl/nginx.pid" failed (123: The filename, directory name, or volume label syntax is incorrect)
+2026/11/18 17:09:41 [emerg] 33324#24692: unknown log format "main" in C:\Users\Administrator\AppData\Local\Temp\nginx-ssl\nginx.conf:10

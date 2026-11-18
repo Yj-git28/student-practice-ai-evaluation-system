@@ -5,7 +5,9 @@ import org.example.backend.security.LoginUser;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,11 +20,38 @@ public class TrainingResultController {
         this.service = service;
     }
 
-    @PreAuthorize("hasAnyAuthority('training:list','training:submit')")
+    /** 实训结果分页：仅教师和管理员可查，学生用 /api/result/my 看自己的 */
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     @GetMapping("/page")
     public R<Map<String, Object>> page(@AuthenticationPrincipal LoginUser user,
                                        @RequestParam(defaultValue = "1") int page,
                                        @RequestParam(defaultValue = "10") int size) {
         return R.ok(service.page(user, page, size));
+    }
+
+    /** 学生提交实训成果（multipart：trainingId + file），返回 AI 初评结果 */
+    @PreAuthorize("hasRole('STUDENT')")
+    @PostMapping("/submit")
+    public R<Map<String, Object>> submit(@RequestParam Long trainingId,
+                                         @RequestParam("file") MultipartFile file,
+                                         @AuthenticationPrincipal LoginUser user) {
+        return R.ok(service.submit(trainingId, file, user));
+    }
+
+    /** 教师人工复核最终成绩 */
+    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PostMapping("/{resultId}/review")
+    public R<Void> review(@PathVariable Long resultId, @RequestBody ResultReviewDTO dto,
+                          @AuthenticationPrincipal LoginUser user) {
+        service.review(resultId, dto, user);
+        return R.ok(null);
+    }
+
+    /** 当前学生在指定实训下的提交记录（最多 10 条） */
+    @PreAuthorize("hasRole('STUDENT')")
+    @GetMapping("/my")
+    public R<List<Map<String, Object>>> my(@RequestParam(required = false) Long trainingId,
+                                           @AuthenticationPrincipal LoginUser user) {
+        return R.ok(service.my(trainingId, user));
     }
 }

@@ -7,6 +7,7 @@ public class SysUser {
     private String realName;
     private Long roleId;
     private Long classId;
+    private String email;
 
     public Long getUserId() { return userId; }
     public void setUserId(Long userId) { this.userId = userId; }
@@ -20,4 +21,6 @@ public class SysUser {
     public void setRoleId(Long roleId) { this.roleId = roleId; }
     public Long getClassId() { return classId; }
     public void setClassId(Long classId) { this.classId = classId; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 }

@@ -39,6 +39,12 @@
             <scope>runtime</scope>
         </dependency>
 
+        <!-- 邮件发送：未配置 spring.mail.* 时自动走 mock，验证码输出到日志 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- jjwt 0.12.6 -->
         <dependency>
             <groupId>io.jsonwebtoken</groupId>

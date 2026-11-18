@@ -7,6 +7,7 @@ import org.example.backend.system.entity.SysRole;
 import org.example.backend.system.entity.SysUser;
 import org.example.backend.system.mapper.SysPermissionMapper;
 import org.example.backend.system.mapper.SysUserMapper;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -27,13 +28,18 @@ public class PermissionService {
         this.cache = cache;
     }
 
-    /** 组装 LoginUser：这是整个 RBAC 的核心，登录和每次请求都走它 */
+    /** 组装 LoginUser：每次先校验账号状态，角色和权限仍可复用缓存 */
     public LoginUser buildLoginUser(Long userId) {
+        Optional<SysUser> found = userMapper.selectById(userId);
+        if (found.isEmpty()) {
+            cache.invalidate(userId);
+            throw new UsernameNotFoundException("用户不存在、已禁用或已删除: " + userId);
+        }
+
         LoginUser cached = cache.get(userId);
         if (cached != null) return cached;
 
-        SysUser user = userMapper.selectById(userId)
-                .orElseThrow(() -> new RuntimeException("用户不存在: " + userId));
+        SysUser user = found.get();
         SysRole role = userMapper.selectRoleByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("用户未绑定角色: " + userId));
 
@@ -48,6 +54,7 @@ public class PermissionService {
         lu.setUserId(user.getUserId());
         lu.setUsername(user.getUsername());
         lu.setRealName(user.getRealName());
+        lu.setEmail(user.getEmail());
         lu.setClassId(user.getClassId());
         lu.setPassword(user.getPassword());
         lu.setRoleId(role.getRoleId());

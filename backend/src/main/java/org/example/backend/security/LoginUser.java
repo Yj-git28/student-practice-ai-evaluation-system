@@ -11,6 +11,7 @@ public class LoginUser implements UserDetails {
     private Long userId;
     private String username;
     private String realName;
+    private String email;
     private Long roleId;
     private String roleCode;
     private String roleName;
@@ -46,6 +47,8 @@ public class LoginUser implements UserDetails {
     public void setUsername(String username) { this.username = username; }
     public String getRealName() { return realName; }
     public void setRealName(String realName) { this.realName = realName; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
     public Long getRoleId() { return roleId; }
     public void setRoleId(Long roleId) { this.roleId = roleId; }
     public String getRoleCode() { return roleCode; }

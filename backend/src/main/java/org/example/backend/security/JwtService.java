@@ -29,10 +29,20 @@ public class JwtService {
      * 同一个 token 后续请求在 JwtAuthFilter 里直接被拒。
      */
     public String createToken(Long userId, String username, String roleCode) {
+        return createTokenWithId(userId, username, roleCode).token();
+    }
+
+    /** 签发结果：token 原文 + jti（单设备登录需要把 jti 写入库） */
+    public record IssuedToken(String token, String jti) {
+    }
+
+    /** 签发 token，同时返回 jti，供单设备登录绑定当前会话 */
+    public IssuedToken createTokenWithId(Long userId, String username, String roleCode) {
         Date now = new Date();
         Date exp = new Date(now.getTime() + expireSeconds * 1000);
-        return Jwts.builder()
-                .id(UUID.randomUUID().toString())          // jti
+        String jti = UUID.randomUUID().toString();
+        String token = Jwts.builder()
+                .id(jti)
                 .subject(String.valueOf(userId))
                 .claim("username", username)
                 .claim("role", roleCode)
@@ -40,6 +50,7 @@ public class JwtService {
                 .expiration(exp)
                 .signWith(key)
                 .compact();
+        return new IssuedToken(token, jti);
     }
 
     /** 解析失败（签名不对/过期/格式错）会抛 JwtException，调用方统一按 401 处理 */

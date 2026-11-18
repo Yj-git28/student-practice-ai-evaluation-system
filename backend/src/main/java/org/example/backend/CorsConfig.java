@@ -8,10 +8,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-//        注释
         registry.addMapping("/**")
-                // 用 pattern 而不是固定端口：Vite 端口被占用时会自动换到 5174/5175
-                .allowedOriginPatterns("http://localhost:*", "http://127.0.0.1:*")
+                // 内网 IP、Cloudflare 隧道域名等任意来源都放行：
+                // 前端通过 Vite 同源代理访问 API，且只用 Bearer token、不用 cookie
+                .allowedOriginPatterns("*")
                 .allowedMethods("GET","POST","PUT","DELETE","OPTIONS")
                 .allowCredentials(true)
                 .maxAge(3600);

@@ -12,11 +12,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
@@ -82,6 +84,35 @@ class PermissionServiceTest {
         when(permissionMapper.selectPersonalByUserId(2L)).thenReturn(List.of());
 
         assertThat(service.buildLoginUser(2L).getDataScope()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("缓存命中时仍先校验账号有效，并复用现有 LoginUser")
+    void cachedUserStillChecksAccountStatus() {
+        SysUser user = new SysUser();
+        user.setUserId(1L);
+        LoginUser cached = new LoginUser();
+        when(userMapper.selectById(1L)).thenReturn(Optional.of(user));
+        when(cache.get(1L)).thenReturn(cached);
+
+        assertThat(service.buildLoginUser(1L)).isSameAs(cached);
+
+        verify(userMapper, never()).selectRoleByUserId(anyLong());
+        verifyNoInteractions(permissionMapper);
+        verify(cache, never()).put(anyLong(), any(LoginUser.class));
+    }
+
+    @Test
+    @DisplayName("账号无效时清除旧缓存并拒绝认证，不读取角色权限")
+    void invalidUserCannotUseStaleCache() {
+        when(userMapper.selectById(1L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.buildLoginUser(1L))
+                .isInstanceOf(UsernameNotFoundException.class);
+
+        verify(cache).invalidate(1L);
+        verify(cache, never()).get(anyLong());
+        verifyNoInteractions(permissionMapper);
     }
 
     @Test

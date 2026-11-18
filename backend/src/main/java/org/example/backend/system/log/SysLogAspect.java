@@ -58,8 +58,23 @@ public class SysLogAspect {
                 sb.append("userId=").append(lu.getUserId()).append(' ');
             } else if (a instanceof CharSequence || a instanceof Number || a instanceof Boolean) {
                 sb.append(a).append(' ');
+            } else if (a instanceof org.example.backend.system.dto.ClassSaveDTO dto) {
+                sb.append("className=").append(dto.getClassName())
+                        .append(" grade=").append(dto.getGrade()).append(' ');
+            } else if (a instanceof org.example.backend.system.dto.UserSaveDTO dto) {
+                sb.append("username=").append(dto.getUsername())
+                        .append(" role=").append(dto.getRoleId()).append(' ');
             } else if (a instanceof java.util.Collection<?> c) {
                 sb.append("size=").append(c.size()).append(' ');
+                // 批量导入：记录前 10 个账号，便于事后追溯
+                String names = c.stream()
+                        .filter(org.example.backend.system.dto.UserSaveDTO.class::isInstance)
+                        .map(x -> ((org.example.backend.system.dto.UserSaveDTO) x).getUsername())
+                        .limit(10)
+                        .collect(java.util.stream.Collectors.joining(","));
+                if (!names.isEmpty()) {
+                    sb.append("users=").append(names).append(' ');
+                }
             }
         }
         return sb.toString().trim();

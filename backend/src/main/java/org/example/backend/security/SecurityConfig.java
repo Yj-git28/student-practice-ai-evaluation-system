@@ -40,7 +40,13 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // /error 必须放行：容器把异常转发到 /error 时若是 401，
                         // 所有 500 都会被伪装成“未登录”，前端永远看不到真实错误
-                        .requestMatchers("/api/auth/login", "/test", "/error").permitAll()
+                        .requestMatchers("/api/auth/login",
+                                "/api/auth/email/send",
+                                "/api/auth/login/email",
+                                "/api/auth/register",
+                                "/api/auth/register/email/send",
+                                "/api/auth/forgot/reset",
+                                "/test", "/error").permitAll()
                         .anyRequest().authenticated()     // ① 兜底：必须登录
                 )
                 .exceptionHandling(ex -> ex

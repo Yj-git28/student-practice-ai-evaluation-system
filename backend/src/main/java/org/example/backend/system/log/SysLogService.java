@@ -32,4 +32,10 @@ public class SysLogService {
             log.error("写 sys_log 失败: {}", text, e);
         }
     }
+
+    /** 最近操作日志，limit 限制在 1~200 之间 */
+    public java.util.List<java.util.Map<String, Object>> recent(int limit) {
+        int size = Math.min(Math.max(limit, 1), 200);
+        return mapper.selectRecent(size);
+    }
 }

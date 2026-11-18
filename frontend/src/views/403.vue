@@ -13,6 +13,7 @@
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/useUserStore'
 import { usePermissionStore } from '@/stores/usePermissionStore'
+import { resetDynamicRoutes } from '@/router'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -23,10 +24,11 @@ function goHome() {
   router.replace('/')
 }
 
-// 兜底：权限数据错乱时，清掉登录态重新来过
-function goLogin() {
-  userStore.logout()
+// 兜底：权限数据错乱时，吊销当前 token 并清掉动态路由重新来过
+async function goLogin() {
+  await userStore.logoutAndRevoke()
   permStore.reset()
+  resetDynamicRoutes()
   router.replace('/login')
 }
 </script>

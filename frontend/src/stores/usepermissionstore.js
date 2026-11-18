@@ -58,6 +58,7 @@ export const usePermissionStore = defineStore('permission', {
 
       const routes = [{
         path: '/',
+        name: 'LayoutRoot',
         component: Layout,
         redirect: leafRoutes.length ? leafRoutes[0].path : '/403',
         meta: { dynamic: true },

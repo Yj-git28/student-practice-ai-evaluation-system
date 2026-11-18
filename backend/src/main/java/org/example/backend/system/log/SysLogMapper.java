@@ -19,4 +19,20 @@ public class SysLogMapper {
                 .param("content", content)
                 .update();
     }
+
+    /** 最近操作日志（含操作人姓名），按时间倒序 */
+    public java.util.List<java.util.Map<String, Object>> selectRecent(int limit) {
+        return jdbc.sql("""
+                SELECT l.log_id AS logId,
+                       COALESCE(u.real_name, u.username, '系统') AS operUser,
+                       l.oper_content AS content,
+                       l.oper_time AS operTime
+                FROM sys_log l
+                LEFT JOIN sys_user u ON u.user_id = l.oper_user_id
+                ORDER BY l.log_id DESC
+                LIMIT :limit
+                """)
+                .param("limit", limit)
+                .query().listOfRows();
+    }
 }

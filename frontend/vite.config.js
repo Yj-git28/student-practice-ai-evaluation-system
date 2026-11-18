@@ -11,6 +11,9 @@ export default defineConfig({
     }
   },
   server: {
+    host: true,
+    // 允许通过 Cloudflare 隧道域名访问（trycloudflare.com 子域名）
+    allowedHosts: ['.trycloudflare.com'],
     proxy: {
       // 前端 /api/** 转发到后端 8080，避开跨域
       '/api': {

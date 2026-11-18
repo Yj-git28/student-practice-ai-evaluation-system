@@ -80,15 +80,17 @@ class TrainingPublishMethodSecurityTest {
     }
 
     @Test
-    @DisplayName("只有 ADMIN 角色能删实训，教师被拒")
-    void teacherCannotDelete() {
+    @DisplayName("教师可删除实训，归属校验下沉到 Service（学生仍被拒）")
+    void teacherDeleteDelegatesOwnershipCheck() {
         try (AnnotationConfigApplicationContext ctx = new AnnotationConfigApplicationContext(TestConfig.class)) {
             TrainingController controller = ctx.getBean(TrainingController.class);
+            TrainingService service = ctx.getBean(TrainingService.class);
             LoginUser teacher = loginUser(5L, "TEACHER", "training:publish");
             authenticate(teacher);
 
-            assertThatThrownBy(() -> controller.delete(1L))
-                    .isInstanceOf(AccessDeniedException.class);
+            controller.delete(1L, teacher);
+
+            verify(service).delete(1L, teacher);
         }
     }
 
