@@ -30,6 +30,9 @@
                 </el-button>
               </div>
             </el-form-item>
+            <el-form-item label="人机验证">
+              <CaptchaBox ref="emailCaptchaBox" v-model="emailCaptcha"/>
+            </el-form-item>
           </el-form>
         </el-tab-pane>
 
@@ -63,6 +66,9 @@
                 </el-button>
               </div>
             </el-form-item>
+            <el-form-item label="人机验证">
+              <CaptchaBox ref="regCaptchaBox" v-model="regCaptcha"/>
+            </el-form-item>
           </el-form>
         </el-tab-pane>
       </el-tabs>
@@ -91,6 +97,9 @@
             </el-button>
           </div>
         </el-form-item>
+        <el-form-item label="人机验证">
+          <CaptchaBox ref="forgotCaptchaBox" v-model="forgotCaptcha"/>
+        </el-form-item>
         <el-form-item label="新密码">
           <el-input v-model="forgotForm.password" type="password" show-password placeholder="至少 6 位" />
         </el-form-item>
@@ -108,6 +117,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/useUserStore'
 import { ElMessage } from 'element-plus'
+import CaptchaBox from '@/components/CaptchaBox.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -122,6 +132,23 @@ const emailForm = ref({ email: '', code: '' })
 const regForm = ref({ username: '', email: '', password: '', code: '', roleId: 2, inviteCode: '' })
 
 const EMAIL_RE = /^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/
+
+// 人机验证：每处发码按钮各配一个图形验证码，值为 { captchaId, answer }
+const emailCaptcha = ref({ captchaId: '', answer: '' })
+const regCaptcha = ref({ captchaId: '', answer: '' })
+const forgotCaptcha = ref({ captchaId: '', answer: '' })
+const emailCaptchaBox = ref(null)
+const regCaptchaBox = ref(null)
+const forgotCaptchaBox = ref(null)
+
+/** 发码前统一校验：邮箱 + 人机验证都填了才发 */
+function checkCaptcha(captcha) {
+  if (!captcha.value.captchaId || !captcha.value.answer) {
+    ElMessage.warning('请先填写右侧图形验证码')
+    return false
+  }
+  return true
+}
 
 async function afterLogin() {
   const redirect = route.query.redirect || '/'
@@ -147,8 +174,9 @@ const handleSendCode = async () => {
   if (!EMAIL_RE.test(emailForm.value.email)) {
     return ElMessage.warning('请输入正确的邮箱')
   }
+  if (!checkCaptcha(emailCaptcha)) return
   try {
-    await userStore.sendEmailCode(emailForm.value.email)
+    await userStore.sendEmailCode(emailForm.value.email, emailCaptcha.value)
     ElMessage.success('验证码已发送，请查收邮箱')
     countdown.value = 60
     const timer = setInterval(() => {
@@ -157,6 +185,8 @@ const handleSendCode = async () => {
     }, 1000)
   } catch (e) {
     ElMessage.error(e.message || '发送失败')
+    // 验证码一次性：失败后必须换一张，否则重试也过不了
+    emailCaptchaBox.value?.refresh()
   }
 }
 
@@ -179,8 +209,9 @@ const handleSendRegCode = async () => {
   if (!EMAIL_RE.test(regForm.value.email)) {
     return ElMessage.warning('请输入正确的邮箱')
   }
+  if (!checkCaptcha(regCaptcha)) return
   try {
-    await userStore.sendRegisterCode(regForm.value.email)
+    await userStore.sendRegisterCode(regForm.value.email, regCaptcha.value)
     ElMessage.success('验证码已发送，请查收邮箱')
     regCountdown.value = 60
     const timer = setInterval(() => {
@@ -189,6 +220,7 @@ const handleSendRegCode = async () => {
     }, 1000)
   } catch (e) {
     ElMessage.error(e.message || '发送失败')
+    regCaptchaBox.value?.refresh()
   }
 }
 
@@ -241,8 +273,9 @@ const handleSendForgotCode = async () => {
   if (!EMAIL_RE.test(forgotForm.value.email)) {
     return ElMessage.warning('请输入正确的邮箱')
   }
+  if (!checkCaptcha(forgotCaptcha)) return
   try {
-    await userStore.sendEmailCode(forgotForm.value.email)
+    await userStore.sendEmailCode(forgotForm.value.email, forgotCaptcha.value)
     ElMessage.success('验证码已发送，请查收邮箱')
     forgotCountdown.value = 60
     const timer = setInterval(() => {
@@ -251,6 +284,7 @@ const handleSendForgotCode = async () => {
     }, 1000)
   } catch (e) {
     ElMessage.error(e.message || '发送失败')
+    forgotCaptchaBox.value?.refresh()
   }
 }
 

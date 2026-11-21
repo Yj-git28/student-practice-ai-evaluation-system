@@ -233,10 +233,16 @@ async function submitWork() {
     const res = await request.post('/result/submit', formData, { timeout: 180000 })
     if (res.code === 200) {
       aiResult.value = res.data || {}
-      ElMessage.success('提交成功，已完成 AI 初评')
       selectedFile.value = null
       uploadRef.value?.clearFiles()
       loadMyList()
+      // 异步模式：后端只回 aiStatus=QUEUED，分数由 Redis Stream 消费者后台回写，这里轮询进度
+      if (aiResult.value.aiStatus === 'QUEUED' && aiResult.value.resultId) {
+        ElMessage.success('提交成功，AI 初评已入队，后台处理中')
+        pollAiResult(aiResult.value.resultId)
+      } else {
+        ElMessage.success('提交成功，已完成 AI 初评')
+      }
     } else {
       ElMessage.error(res.msg || '提交失败')
     }
@@ -245,6 +251,27 @@ async function submitWork() {
   } finally {
     submitting.value = false
   }
+}
+
+/** 异步评分进度：最多轮询 20 次（每秒一次），拿到 DONE 就回填分数 */
+async function pollAiResult(resultId, attempts = 20) {
+  for (let i = 0; i < attempts; i++) {
+    await new Promise((r) => setTimeout(r, 1000))
+    try {
+      const res = await request.get(`/result/${resultId}/ai`)
+      if (res.code === 200 && res.data) {
+        aiResult.value = res.data
+        if (res.data.aiStatus === 'DONE') {
+          ElMessage.success('AI 初评完成')
+          loadMyList()
+          return
+        }
+      }
+    } catch (e) {
+      return
+    }
+  }
+  ElMessage.warning('AI 初评仍在后台处理，可稍后刷新查看')
 }
 
 onMounted(async () => {

@@ -4,3 +4,5 @@
 2026/11/18 16:56:07 [emerg] 36824#15844: CreateFile() "C:\Users\Administrator\AppData\Local\Temp
 ginx-ssl/nginx.pid" failed (123: The filename, directory name, or volume label syntax is incorrect)
 2026/11/18 17:09:41 [emerg] 33324#24692: unknown log format "main" in C:\Users\Administrator\AppData\Local\Temp\nginx-ssl\nginx.conf:10
+2026/11/19 10:59:38 [notice] 30196#13852: signal process started
+2026/11/19 10:59:38 [error] 30196#13852: OpenEvent("Global\ngx_stop_16452") failed (2: The system cannot find the file specified)

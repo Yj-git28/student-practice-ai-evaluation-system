@@ -9,14 +9,25 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthService authService;
+    private final CaptchaService captchaService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, CaptchaService captchaService) {
         this.authService = authService;
+        this.captchaService = captchaService;
+    }
+
+    /** 图形人机验证码：返回 captchaId 与 SVG data URI（默认 120 秒有效、一次性） */
+    @PublicApi
+    @GetMapping("/captcha")
+    public R<Map<String, String>> captcha() {
+        return R.ok(captchaService.create());
     }
 
     @PublicApi
@@ -26,11 +37,13 @@ public class AuthController {
         return R.ok(authService.login(dto));
     }
 
-    /** 发送邮箱登录验证码；未配置 SMTP 时验证码输出到后端日志 */
+    /** 发送邮箱登录验证码；未配置 SMTP 时验证码输出到后端日志。需先过人机验证 */
     @PublicApi
     @PostMapping("/email/send")
     public R<Void> sendEmailCode(@RequestBody EmailLoginDTO dto) {
-        authService.sendLoginCode(dto == null ? null : dto.getEmail());
+        authService.sendLoginCode(dto == null ? null : dto.getEmail(),
+                dto == null ? null : dto.getCaptchaId(),
+                dto == null ? null : dto.getCaptchaAnswer());
         return R.ok(null);
     }
 
@@ -42,11 +55,13 @@ public class AuthController {
         return R.ok(authService.loginByEmail(dto));
     }
 
-    /** 发送注册验证码 */
+    /** 发送注册验证码。需先过人机验证 */
     @PublicApi
     @PostMapping("/register/email/send")
     public R<Void> sendRegisterCode(@RequestBody EmailLoginDTO dto) {
-        authService.sendRegisterCode(dto == null ? null : dto.getEmail());
+        authService.sendRegisterCode(dto == null ? null : dto.getEmail(),
+                dto == null ? null : dto.getCaptchaId(),
+                dto == null ? null : dto.getCaptchaAnswer());
         return R.ok(null);
     }
 
@@ -58,12 +73,15 @@ public class AuthController {
         return R.ok(authService.register(dto));
     }
 
-    /** 已登录用户发送换绑邮箱验证码 */
+    /** 已登录用户发送换绑邮箱验证码。需先过人机验证 */
     @PreAuthorize("isAuthenticated()")
     @PostMapping("/bind-email/send")
     public R<Void> sendBindEmailCode(@AuthenticationPrincipal LoginUser loginUser,
                                      @RequestBody EmailLoginDTO dto) {
-        authService.sendBindCode(loginUser.getUserId(), dto == null ? null : dto.getEmail());
+        authService.sendBindCode(loginUser.getUserId(),
+                dto == null ? null : dto.getEmail(),
+                dto == null ? null : dto.getCaptchaId(),
+                dto == null ? null : dto.getCaptchaAnswer());
         return R.ok(null);
     }
 

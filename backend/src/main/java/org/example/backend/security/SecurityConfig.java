@@ -41,6 +41,7 @@ public class SecurityConfig {
                         // /error 必须放行：容器把异常转发到 /error 时若是 401，
                         // 所有 500 都会被伪装成“未登录”，前端永远看不到真实错误
                         .requestMatchers("/api/auth/login",
+                                "/api/auth/captcha",     // 图形人机验证码：登录前就要能取，必须匿名放行
                                 "/api/auth/email/send",
                                 "/api/auth/login/email",
                                 "/api/auth/register",

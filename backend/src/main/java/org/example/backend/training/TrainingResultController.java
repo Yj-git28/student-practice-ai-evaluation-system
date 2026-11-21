@@ -38,6 +38,14 @@ public class TrainingResultController {
         return R.ok(service.submit(trainingId, file, user));
     }
 
+    /** 异步 AI 初评进度：学生看自己的、教师看自己实训下的、管理员看全部 */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{resultId}/ai")
+    public R<Map<String, Object>> ai(@PathVariable Long resultId,
+                                     @AuthenticationPrincipal LoginUser user) {
+        return R.ok(service.ai(resultId, user));
+    }
+
     /** 教师人工复核最终成绩 */
     @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
     @PostMapping("/{resultId}/review")

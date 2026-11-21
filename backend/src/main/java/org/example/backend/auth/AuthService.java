@@ -33,12 +33,14 @@ public class AuthService {
     private final TokenBlacklistService blacklist;
     private final SysLogService sysLogService;
     private final InviteCodeService inviteCodeService;
+    private final CaptchaService captcha;
 
     public AuthService(SysUserMapper userMapper, LoginCodeMapper codeMapper, EmailSender emailSender,
                        PermissionService permissionService,
                        JwtService jwtService, PasswordEncoder passwordEncoder,
                        LoginAttemptService loginAttemptService, TokenBlacklistService blacklist,
-                       SysLogService sysLogService, InviteCodeService inviteCodeService) {
+                       SysLogService sysLogService, InviteCodeService inviteCodeService,
+                       CaptchaService captcha) {
         this.userMapper = userMapper;
         this.codeMapper = codeMapper;
         this.emailSender = emailSender;
@@ -49,6 +51,7 @@ public class AuthService {
         this.blacklist = blacklist;
         this.sysLogService = sysLogService;
         this.inviteCodeService = inviteCodeService;
+        this.captcha = captcha;
     }
 
     public LoginVO login(LoginDTO dto) {
@@ -96,8 +99,9 @@ public class AuthService {
         return new LoginVO(issued.token(), jwtService.getExpireSeconds());
     }
 
-    /** 发送邮箱登录验证码（6 位，5 分钟有效，60 秒限流） */
-    public void sendLoginCode(String email) {
+    /** 发送邮箱登录验证码（6 位，5 分钟有效，60 秒限流）；必须先通过人机验证 */
+    public void sendLoginCode(String email, String captchaId, String captchaAnswer) {
+        requireCaptcha(captchaId, captchaAnswer);
         if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             throw new BizException(4002, "邮箱格式不正确");
         }
@@ -130,8 +134,9 @@ public class AuthService {
         return issueToken(user);
     }
 
-    /** 发送注册验证码：邮箱必须未被注册 */
-    public void sendRegisterCode(String email) {
+    /** 发送注册验证码：邮箱必须未被注册；必须先通过人机验证 */
+    public void sendRegisterCode(String email, String captchaId, String captchaAnswer) {
+        requireCaptcha(captchaId, captchaAnswer);
         if (email == null || !email.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             throw new BizException(4002, "邮箱格式不正确");
         }
@@ -196,8 +201,9 @@ public class AuthService {
         return issueToken(user);
     }
 
-    /** 已登录用户发送换绑邮箱验证码：新邮箱不能被其他账号占用 */
-    public void sendBindCode(Long userId, String newEmail) {
+    /** 已登录用户发送换绑邮箱验证码：新邮箱不能被其他账号占用；必须先通过人机验证 */
+    public void sendBindCode(Long userId, String newEmail, String captchaId, String captchaAnswer) {
+        requireCaptcha(captchaId, captchaAnswer);
         if (newEmail == null || !newEmail.matches("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
             throw new BizException(4002, "邮箱格式不正确");
         }
@@ -215,6 +221,16 @@ public class AuthService {
         String code = String.valueOf(ThreadLocalRandom.current().nextInt(100000, 1000000));
         codeMapper.save(newEmail, code, 300);
         emailSender.send(newEmail, code);
+    }
+
+    /**
+     * 人机验证统一入口：发码前必须先过图形验证。
+     * 失败抛 4006（前端据此提示并刷新验证码）；Redis 故障抛 500，属 fail-closed。
+     */
+    private void requireCaptcha(String captchaId, String captchaAnswer) {
+        if (!captcha.verify(captchaId, captchaAnswer)) {
+            throw new BizException(4006, "人机验证失败，请刷新验证码后重试");
+        }
     }
 
     /** 已登录用户确认换绑邮箱 */

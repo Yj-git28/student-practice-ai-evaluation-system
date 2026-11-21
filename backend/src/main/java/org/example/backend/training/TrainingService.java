@@ -1,6 +1,7 @@
 package org.example.backend.training;
 
 import org.example.backend.common.BizException;
+import org.example.backend.evaluation.EvaluationCacheService;
 import org.example.backend.security.LoginUser;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
@@ -20,10 +21,12 @@ public class TrainingService {
 
     private final TrainingMapper mapper;
     private final JdbcClient jdbc;
+    private final EvaluationCacheService cache;
 
-    public TrainingService(TrainingMapper mapper, JdbcClient jdbc) {
+    public TrainingService(TrainingMapper mapper, JdbcClient jdbc, EvaluationCacheService cache) {
         this.mapper = mapper;
         this.jdbc = jdbc;
+        this.cache = cache;
     }
 
     /** 发布：教师只能发布自己的实训；ADMIN/公共实训(teacher_id IS NULL) 也能发布 */
@@ -128,6 +131,7 @@ public class TrainingService {
         }
         mapper.deleteResults(trainingId);
         mapper.delete(trainingId);
+        cache.evictStats();          // 删实训连带删提交记录，看板缓存作废
     }
 
     /** 名称必填；scope_type=2 时 scope_value 必须是有效年级；时间统一格式化 */

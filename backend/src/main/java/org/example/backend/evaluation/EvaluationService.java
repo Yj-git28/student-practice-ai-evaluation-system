@@ -12,14 +12,23 @@ import java.util.Map;
 public class EvaluationService {
 
     private final EvaluationMapper mapper;
+    private final EvaluationCacheService cache;
 
-    public EvaluationService(EvaluationMapper mapper) {
+    public EvaluationService(EvaluationMapper mapper, EvaluationCacheService cache) {
         this.mapper = mapper;
+        this.cache = cache;
     }
 
     /** 教师只统计自己发布的实训；ADMIN 全量 */
     public Map<String, Object> stat(LoginUser user) {
         Long teacherId = "TEACHER".equals(user.getRoleCode()) ? user.getUserId() : null;
+
+        String key = cache.statKey(teacherId);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> cached = (Map<String, Object>) cache.get(key, Map.class);
+        if (cached != null) {
+            return cached;
+        }
 
         int totalStudents = mapper.countStudents(teacherId);
         int submitted = mapper.countSubmitted(teacherId);
@@ -38,6 +47,8 @@ public class EvaluationService {
         result.put("completionRate", round1(completionRate));
         result.put("avgScore", avgScore);
         result.put("indicators", indicators);
+
+        cache.put(key, result, EvaluationCacheService.STAT_TTL);
         return result;
     }
 

@@ -30,8 +30,12 @@ export const useUserStore = defineStore('user', {
       this.setToken(res.data.token)
     },
 
-    async sendEmailCode(email) {
-      const res = await request.post('/auth/email/send', { email })
+    async sendEmailCode(email, captcha) {
+      const res = await request.post('/auth/email/send', {
+        email,
+        captchaId: captcha?.captchaId,
+        captchaAnswer: captcha?.answer
+      })
       if (res.code !== 200) throw new Error(res.msg)
     },
 
@@ -41,8 +45,12 @@ export const useUserStore = defineStore('user', {
       this.setToken(res.data.token)
     },
 
-    async sendRegisterCode(email) {
-      const res = await request.post('/auth/register/email/send', { email })
+    async sendRegisterCode(email, captcha) {
+      const res = await request.post('/auth/register/email/send', {
+        email,
+        captchaId: captcha?.captchaId,
+        captchaAnswer: captcha?.answer
+      })
       if (res.code !== 200) throw new Error(res.msg)
     },
 

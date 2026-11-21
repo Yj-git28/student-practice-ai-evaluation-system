@@ -75,7 +75,7 @@ public class TrainingMapper {
     public Optional<Map<String, Object>> detail(Long trainingId, String studentGrade) {
         StringBuilder sql = new StringBuilder(BASE_SELECT + " AND t.training_id = :tid");
         if (studentGrade != null) {
-            sql.append(studentScopeClause());
+            sql.append(" ").append(studentScopeClause());
         }
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString()).param("tid", trainingId);
         if (studentGrade != null) spec = spec.param("grade", studentGrade);
@@ -173,9 +173,13 @@ public class TrainingMapper {
             WHERE 1 = 1
             """;
 
-    /** 学生可见性子句：scope_type=1（教师专属）/3（全校公共）直接可见，scope_type=2 需匹配年级 */
+    /**
+     * 学生可见性子句：scope_type=1（教师专属）/3（全校公共）直接可见，scope_type=2 需匹配年级。
+     * 注意：返回值自带前导空格——调用方可能紧跟在 :tid 之类的占位符后面拼接，
+     * 少了空格 Spring 会把占位符解析成 ":tidAND"，报 No value supplied for the SQL parameter。
+     */
     private static String studentScopeClause() {
-        return """
+        return " " + """
                 AND (
                     t.scope_type = 1
                     OR t.scope_type = 3

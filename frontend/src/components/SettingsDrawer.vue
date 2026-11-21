@@ -22,6 +22,9 @@
           </el-button>
         </div>
       </el-form-item>
+      <el-form-item label="人机验证">
+        <CaptchaBox ref="captchaBox" v-model="captcha"/>
+      </el-form-item>
       <el-form-item>
         <el-button type="primary" :loading="binding" @click="submitBind">确认换绑</el-button>
       </el-form-item>
@@ -47,6 +50,7 @@ import { computed, ref, onBeforeUnmount } from 'vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { useUserStore } from '@/stores/useUserStore'
+import CaptchaBox from '@/components/CaptchaBox.vue'
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -60,6 +64,9 @@ const newEmail = ref('')
 const code = ref('')
 const binding = ref(false)
 const countdown = ref(0)
+/** 人机验证：{ captchaId, answer } */
+const captcha = ref({ captchaId: '', answer: '' })
+const captchaBox = ref(null)
 let timer = null
 
 const inviteCode = ref('')
@@ -102,16 +109,26 @@ async function sendCode() {
     ElMessage.warning('请输入正确的新邮箱')
     return
   }
+  if (!captcha.value.captchaId || !captcha.value.answer) {
+    ElMessage.warning('请先填写右侧图形验证码')
+    return
+  }
   try {
-    const res = await request.post('/auth/bind-email/send', { email: newEmail.value })
+    const res = await request.post('/auth/bind-email/send', {
+      email: newEmail.value,
+      captchaId: captcha.value.captchaId,
+      captchaAnswer: captcha.value.answer
+    })
     if (res.code !== 200) {
       ElMessage.error(res.msg || '发送失败')
+      captchaBox.value?.refresh()
       return
     }
     ElMessage.success('验证码已发送到新邮箱')
     startCountdown()
   } catch (e) {
     ElMessage.error('发送失败')
+    captchaBox.value?.refresh()
   }
 }
 

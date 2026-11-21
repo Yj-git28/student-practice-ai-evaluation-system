@@ -106,6 +106,20 @@ public class TrainingResultMapper {
         return jdbc.sql("SELECT LAST_INSERT_ID()").query(Long.class).single();
     }
 
+    /** 查询单条提交的 AI 初评字段，供"异步评分进度"接口使用；记录不存在返回空列表 */
+    public List<Map<String, Object>> selectAiRow(Long resultId) {
+        return jdbc.sql("""
+                SELECT r.result_id AS resultId, r.ai_score AS aiScore, r.ai_comment AS aiComment,
+                       r.student_id AS studentId, t.teacher_id AS teacherId
+                FROM train_result r
+                INNER JOIN training t ON t.training_id = r.training_id
+                WHERE r.result_id = :rid
+                """)
+                .param("rid", resultId)
+                .query()
+                .listOfRows();
+    }
+
     public void updateAi(Long resultId, int aiScore, String aiComment) {
         jdbc.sql("UPDATE train_result SET ai_score = :score, ai_comment = :comment WHERE result_id = :rid")
                 .param("score", aiScore)

@@ -9,6 +9,7 @@ import org.mockito.Mockito;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -41,8 +42,13 @@ class TrainingPublishMethodSecurityTest {
         }
 
         @Bean
-        TrainingController trainingController(TrainingService service, DataScopeResolver resolver) {
-            return new TrainingController(service, resolver);
+        JdbcClient jdbcClient() {
+            return Mockito.mock(JdbcClient.class);
+        }
+
+        @Bean
+        TrainingController trainingController(TrainingService service, DataScopeResolver resolver, JdbcClient jdbc) {
+            return new TrainingController(service, resolver, jdbc);
         }
     }
 
@@ -75,7 +81,7 @@ class TrainingPublishMethodSecurityTest {
 
             controller.publish(1L, teacher);
 
-            verify(service).publish(1L, 5L);
+            verify(service).publish(1L, 5L, "TEACHER");
         }
     }
 

@@ -2,6 +2,7 @@ package org.example.backend.security;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
+import org.example.backend.system.mapper.SysUserMapper;
 import org.example.backend.system.service.PermissionService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ class JwtAuthFilterTest {
     @Mock JwtService jwtService;
     @Mock PermissionService permissionService;
     @Mock TokenBlacklistService blacklist;
+    @Mock SysUserMapper userMapper;
     @Mock Claims claims;
     @Mock FilterChain chain;
 
@@ -33,7 +35,7 @@ class JwtAuthFilterTest {
     @BeforeEach
     void setUp() {
         SecurityContextHolder.clearContext();
-        filter = new JwtAuthFilter(jwtService, permissionService, blacklist);
+        filter = new JwtAuthFilter(jwtService, permissionService, blacklist, userMapper);
     }
 
     @AfterEach
@@ -51,6 +53,7 @@ class JwtAuthFilterTest {
         when(jwtService.parse("valid-token")).thenReturn(claims);
         when(claims.getId()).thenReturn("jti-1");
         when(claims.getSubject()).thenReturn("1");
+        when(userMapper.selectCurrentJti(1L)).thenReturn(java.util.Optional.of("jti-1"));
         when(permissionService.buildLoginUser(1L))
                 .thenThrow(new UsernameNotFoundException("用户已禁用"));
 
