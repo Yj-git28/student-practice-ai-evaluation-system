@@ -1,0 +1,49 @@
+# IDEA本地配置，不上传远程
+.idea/
+*.iml
+*.iws
+
+# Vue前端
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# SpringBoot后端
+backend/target/
+backend/*.log
+backend/src/main/resources/application-local.properties
+
+#系统文件
+.DS_Store
+Thumbs.db
+deploy/nginx/ssl/logs/
+*.pid
+
+# 本地 Redis 程序、配置与持久化数据（不入库，组员各自准备 Redis）
+deploy/redis/*.exe
+deploy/redis/*.dll
+deploy/redis/*.pdb
+deploy/redis/*.rdb
+deploy/redis/*.aof
+deploy/redis/*.conf
+deploy/redis/*.log
+
+# 运行日志与上传文件
+*.log
+uploads/
+
+# 本地证书
+frontend/.ssl-certs/
+
+# 打包的第三方安装包
+deploy/*.zip
+
+# 文档临时产物
+docs/_tmp*
+docs/_rbac_build/
+
+# 私钥、证书库（本地生成，不随仓库分发；他人按 README 重新生成）
+*.p12
+*.pfx
+*.key
+**/key.pem
