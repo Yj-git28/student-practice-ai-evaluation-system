@@ -21,7 +21,8 @@ public class SysPermissionMapper {
                 SELECT DISTINCT p.permission_id, p.parent_id, p.perm_name, p.perm_type,
                                 p.perm_code, p.perm_path, p.icon, p.sort
                 FROM sys_user u
-                INNER JOIN sys_role_permission rp ON rp.role_id = u.role_id
+                INNER JOIN sys_user_role ur ON ur.user_id = u.user_id
+                INNER JOIN sys_role_permission rp ON rp.role_id = ur.role_id
                 INNER JOIN sys_permission p ON p.permission_id = rp.permission_id
                 WHERE u.user_id = :userId
                 ORDER BY p.sort ASC, p.permission_id ASC
@@ -52,7 +53,8 @@ public class SysPermissionMapper {
                 SELECT DISTINCT p.permission_id, p.parent_id, p.perm_name, p.perm_type,
                                 p.perm_code, p.perm_path, p.icon, p.sort
                 FROM sys_user u
-                INNER JOIN sys_role_permission rp ON rp.role_id = u.role_id
+                INNER JOIN sys_user_role ur ON ur.user_id = u.user_id
+                INNER JOIN sys_role_permission rp ON rp.role_id = ur.role_id
                 INNER JOIN sys_permission p ON p.permission_id = rp.permission_id
                 WHERE u.user_id = :userId AND p.perm_type = 1
                 ORDER BY p.sort ASC, p.permission_id ASC

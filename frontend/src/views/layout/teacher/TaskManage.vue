@@ -3,7 +3,7 @@
     <template #header>
       <div class="header">
         <span>实训任务管理</span>
-        <el-button type="primary" @click="openCreate">新增任务</el-button>
+        <el-button type="primary" v-has-perm="'training:add'" @click="openCreate">新增任务</el-button>
       </div>
     </template>
 
@@ -53,10 +53,10 @@
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="primary" v-has-perm="'training:edit'" @click="openEdit(row)">编辑</el-button>
           <el-button v-if="row.status !== 1" v-has-perm="'training:publish'" link type="success"
                      @click="publishTask(row)">发布</el-button>
-          <el-button link type="danger" @click="removeTask(row)">删除</el-button>
+          <el-button link type="danger" v-has-perm="'training:remove'" @click="removeTask(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -106,7 +106,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveTask">保存</el-button>
+        <el-button type="primary" :loading="saving" v-has-perm="['training:add','training:edit']" @click="saveTask">保存</el-button>
       </template>
     </el-dialog>
   </el-card>

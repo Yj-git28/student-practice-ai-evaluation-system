@@ -6,6 +6,7 @@ import org.example.backend.system.entity.SysRole;
 import org.example.backend.system.entity.SysUser;
 import org.example.backend.system.mapper.SysPermissionMapper;
 import org.example.backend.system.mapper.SysUserMapper;
+import org.example.backend.system.mapper.SysUserRoleMapper;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
@@ -16,13 +17,16 @@ import java.util.stream.Collectors;
 public class PermissionService {
 
     private final SysUserMapper userMapper;
+    private final SysUserRoleMapper userRoleMapper;
     private final SysPermissionMapper permissionMapper;
     private final PermissionCacheService cache;
 
     public PermissionService(SysUserMapper userMapper,
+                             SysUserRoleMapper userRoleMapper,
                              SysPermissionMapper permissionMapper,
                              PermissionCacheService cache) {
         this.userMapper = userMapper;
+        this.userRoleMapper = userRoleMapper;
         this.permissionMapper = permissionMapper;
         this.cache = cache;
     }
@@ -39,15 +43,34 @@ public class PermissionService {
         if (cached != null) return cached;
 
         SysUser user = found.get();
-        SysRole role = userMapper.selectRoleByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("用户未绑定角色: " + userId));
 
-        // 角色权限 ∪ 个人附加权限（sys_user_permission）
+        // 多角色：取全部启用角色，权限取并集
+        List<SysRole> roles = userRoleMapper.selectRolesByUserId(userId);
+        if (roles.isEmpty()) {
+            cache.invalidate(userId);
+            throw new UsernameNotFoundException("用户未绑定角色: " + userId);
+        }
+
+        Set<String> roleCodes = roles.stream()
+                .map(SysRole::getRoleCode)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        // 角色权限 ∪ 个人附加权限
         Set<String> codes = new LinkedHashSet<>();
         List<SysPermission> rolePerms = permissionMapper.selectByUserId(userId);
         List<SysPermission> personalPerms = permissionMapper.selectPersonalByUserId(userId);
         rolePerms.forEach(p -> addCode(codes, p));
         personalPerms.forEach(p -> addCode(codes, p));
+
+        // 数据范围取最宽一档：1 全部 > 2 本部门 > 3 本人
+        int dataScope = roles.stream()
+                .mapToInt(r -> r.getDataScope() == null ? DataScope.SELF : r.getDataScope())
+                .min()
+                .orElse(DataScope.SELF);
+
+        // 主角色取第一个，回填单值字段兼容 JWT / 旧展示
+        SysRole primary = roles.get(0);
 
         LoginUser lu = new LoginUser();
         lu.setUserId(user.getUserId());
@@ -56,13 +79,12 @@ public class PermissionService {
         lu.setEmail(user.getEmail());
         lu.setClassId(user.getClassId());
         lu.setPassword(user.getPassword());
-        lu.setRoleId(role.getRoleId());
-        lu.setRoleCode(role.getRoleCode());
-        lu.setRoleName(role.getRoleName());
-        lu.setRoles(Set.of(role.getRoleCode()));
+        lu.setRoleId(primary.getRoleId());
+        lu.setRoleCode(primary.getRoleCode());
+        lu.setRoleName(primary.getRoleName());
+        lu.setRoles(roleCodes);
         lu.setPermissions(codes);
-        // 直接读 sys_role.data_scope（1 全部 / 2 本部门 / 3 本人），不再按 roleCode 硬编码
-        lu.setDataScope(DataScope.normalize(role.getDataScope()));
+        lu.setDataScope(DataScope.normalize(dataScope));
 
         cache.put(userId, lu);
         return lu;

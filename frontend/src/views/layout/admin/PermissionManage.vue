@@ -30,7 +30,7 @@
                   </el-button>
                   <el-button size="small" @click="checkAll">全选</el-button>
                   <el-button size="small" @click="clearCheck">清空</el-button>
-                  <el-button size="small" type="primary" :loading="granting"
+                  <el-button size="small" type="primary" :loading="granting" v-has-perm="'permission:grant'"
                              :disabled="!currentRole" @click="saveGrant">保存授权</el-button>
                 </div>
               </div>
@@ -61,7 +61,7 @@
       <!-- ============ 权限项维护 ============ -->
       <el-tab-pane label="权限项维护" name="perm">
         <div class="perm-toolbar">
-          <el-button type="primary" @click="openCreate">新增权限</el-button>
+          <el-button type="primary" v-has-perm="'permission:create'" @click="openCreate">新增权限</el-button>
           <el-button @click="loadAll">刷新</el-button>
         </div>
         <el-table :data="permFlat" border v-loading="permLoading">
@@ -79,8 +79,8 @@
           <el-table-column prop="sort" label="排序" width="70"/>
           <el-table-column label="操作" width="150" fixed="right">
             <template #default="{ row }">
-              <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-              <el-button link type="danger" @click="removePerm(row)">删除</el-button>
+              <el-button link type="primary" v-has-perm="'permission:edit'" @click="openEdit(row)">编辑</el-button>
+              <el-button link type="danger" v-has-perm="'permission:remove'" @click="removePerm(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -120,7 +120,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="savePerm">确定</el-button>
+        <el-button type="primary" :loading="saving" v-has-perm="['permission:create','permission:edit']" @click="savePerm">确定</el-button>
       </template>
     </el-dialog>
   </el-card>

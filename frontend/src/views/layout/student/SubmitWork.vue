@@ -53,7 +53,7 @@
       </el-form-item>
 
       <el-form-item>
-        <el-button type="success" :loading="submitting" :disabled="!trainingId" @click="submitWork">
+        <el-button type="success" :loading="submitting" :disabled="!trainingId" v-has-perm="'training:submit'" @click="submitWork">
           确认提交成果
         </el-button>
       </el-form-item>

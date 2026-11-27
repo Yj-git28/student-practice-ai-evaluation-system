@@ -14,6 +14,7 @@ import org.example.backend.system.entity.SysPermission;
 import org.example.backend.system.entity.SysUser;
 import org.example.backend.system.log.SysLogService;
 import org.example.backend.system.mapper.SysUserMapper;
+import org.example.backend.system.mapper.SysUserRoleMapper;
 import org.example.backend.system.service.InviteCodeService;
 import org.example.backend.system.service.PermissionService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 public class AuthService {
 
     private final SysUserMapper userMapper;
+    private final SysUserRoleMapper userRoleMapper;
     private final LoginCodeMapper codeMapper;
     private final EmailSender emailSender;
     private final PermissionService permissionService;
@@ -41,13 +43,14 @@ public class AuthService {
     private final InviteCodeService inviteCodeService;
     private final CaptchaService captcha;
 
-    public AuthService(SysUserMapper userMapper, LoginCodeMapper codeMapper, EmailSender emailSender,
+    public AuthService(SysUserMapper userMapper, SysUserRoleMapper userRoleMapper, LoginCodeMapper codeMapper, EmailSender emailSender,
                        PermissionService permissionService,
                        JwtService jwtService, PasswordEncoder passwordEncoder,
                        LoginAttemptService loginAttemptService, TokenBlacklistService blacklist,
                        SysLogService sysLogService, InviteCodeService inviteCodeService,
                        CaptchaService captcha) {
         this.userMapper = userMapper;
+        this.userRoleMapper = userRoleMapper;
         this.codeMapper = codeMapper;
         this.emailSender = emailSender;
         this.permissionService = permissionService;
@@ -204,6 +207,7 @@ public class AuthService {
 
         SysUser user = userMapper.selectByEmail(dto.getEmail())
                 .orElseThrow(() -> new BizException(500, "注册失败，请重试"));
+        userRoleMapper.replaceUserRoles(user.getUserId(), List.of((long) roleId));
         return issueToken(user);
     }
 

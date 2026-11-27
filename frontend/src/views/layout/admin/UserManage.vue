@@ -4,10 +4,10 @@
       <div class="header">
         <span>师生账号 &amp; 班级管理</span>
         <div>
-          <el-button type="primary" @click="openCreate">新增账号</el-button>
-          <el-button @click="openImport">批量导入</el-button>
-          <el-button @click="exportUsers">批量导出</el-button>
-          <el-button @click="openClassManage">班级管理</el-button>
+          <el-button type="primary" v-has-perm="'user:add'" @click="openCreate">新增账号</el-button>
+          <el-button v-has-perm="'user:import'" @click="openImport">批量导入</el-button>
+          <el-button v-has-perm="'user:list'" @click="exportUsers">批量导出</el-button>
+          <el-button v-has-perm="'user:list'" @click="openClassManage">班级管理</el-button>
           <el-button @click="loadList">刷新</el-button>
         </div>
       </div>
@@ -27,7 +27,7 @@
       </el-form-item>
       <el-form-item label="角色">
         <el-select v-model="filters.roleId" placeholder="全部角色" clearable style="width:120px">
-          <el-option v-for="r in ROLE_OPTIONS" :key="r.value" :label="r.label" :value="r.value"/>
+          <el-option v-for="r in roleOptions" :key="r.value" :label="r.label" :value="r.value"/>
         </el-select>
       </el-form-item>
       <el-form-item label="关键词">
@@ -60,9 +60,9 @@
       </el-table-column>
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link type="warning" @click="resetPwd(row)">重置密码</el-button>
-          <el-button link type="danger" @click="removeUser(row)">删除</el-button>
+          <el-button link type="primary" v-has-perm="'user:edit'" @click="openEdit(row)">编辑</el-button>
+          <el-button link type="warning" v-has-perm="'user:resetpwd'" @click="resetPwd(row)">重置密码</el-button>
+          <el-button link type="danger" v-has-perm="'user:remove'" @click="removeUser(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -82,8 +82,8 @@
           <el-input v-model="form.email" placeholder="可选，用于登录 / 找回密码"/>
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="form.roleId" style="width:100%">
-            <el-option v-for="r in ROLE_OPTIONS" :key="r.value" :label="r.label" :value="r.value"/>
+          <el-select v-model="form.roleIds" multiple placeholder="可选择多个角色" style="width:100%">
+            <el-option v-for="r in roleOptions" :key="r.value" :label="r.label" :value="r.value"/>
           </el-select>
         </el-form-item>
         <el-form-item label="班级">
@@ -99,7 +99,7 @@
       </el-form>
       <template #footer>
         <el-button @click="formVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveUser">确定</el-button>
+        <el-button type="primary" :loading="saving" v-has-perm="['user:add','user:edit']" @click="saveUser">确定</el-button>
       </template>
     </el-dialog>
 
@@ -126,7 +126,7 @@
       </div>
       <template #footer>
         <el-button @click="importVisible = false">关闭</el-button>
-        <el-button type="primary" :loading="importing" @click="submitImport">开始导入</el-button>
+        <el-button type="primary" :loading="importing" v-has-perm="'user:import'" @click="submitImport">开始导入</el-button>
       </template>
     </el-dialog>
 
@@ -143,7 +143,7 @@
           <el-input v-model="classForm.className" placeholder="如 软件工程2402班" style="width:190px"/>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :loading="classSaving" @click="saveClass">
+          <el-button type="primary" :loading="classSaving" v-has-perm="['class:add','class:edit']" @click="saveClass">
             {{ classForm.classId ? '保存修改' : '添加班级' }}
           </el-button>
           <el-button v-if="classForm.classId" @click="resetClassForm">取消</el-button>
@@ -156,8 +156,8 @@
         <el-table-column prop="className" label="班级名称"/>
         <el-table-column label="操作" width="130">
           <template #default="{ row }">
-            <el-button link type="primary" @click="editClass(row)">编辑</el-button>
-            <el-button link type="danger" @click="removeClass(row)">删除</el-button>
+            <el-button link type="primary" v-has-perm="'class:edit'" @click="editClass(row)">编辑</el-button>
+            <el-button link type="danger" v-has-perm="'class:remove'" @click="removeClass(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -171,11 +171,12 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import request from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
-const ROLE_OPTIONS = [
+// 角色选项从后端 /system/roles 拉取；兜底内置三角色，防止接口异常时下拉为空
+const roleOptions = ref([
   { label: '教师', value: 1 },
   { label: '学生', value: 2 },
   { label: '管理员', value: 3 }
-]
+])
 const ROLE_MAP = {
   '教师': 1, 'TEACHER': 1, '1': 1,
   '学生': 2, 'STUDENT': 2, '2': 2,
@@ -201,12 +202,17 @@ function roleTagType(roleId) {
 
 /** 兼容后端返回 camelCase / snake_case 两种字段命名 */
 function normalizeUser(row) {
+  const rawRoleIds = row.roleIds ?? row.role_ids
+  const roleIds = Array.isArray(rawRoleIds)
+    ? rawRoleIds.map(Number)
+    : String(rawRoleIds ?? '').split(',').filter(Boolean).map(Number)
   return {
     userId: row.userId ?? row.user_id,
     username: row.username,
     realName: row.realName ?? row.real_name,
     email: row.email,
     roleId: row.roleId ?? row.role_id,
+    roleIds,
     roleName: row.roleName ?? row.role_name,
     classId: row.classId ?? row.class_id ?? null,
     className: row.className ?? row.class_name ?? '',
@@ -219,6 +225,17 @@ function normalizeClass(row) {
     classId: row.classId ?? row.class_id,
     className: row.className ?? row.class_name,
     grade: row.grade ?? ''
+  }
+}
+
+async function loadRoles() {
+  try {
+    const res = await request.get('/system/roles')
+    if (res.code === 200 && Array.isArray(res.data) && res.data.length) {
+      roleOptions.value = res.data.map(r => ({ label: r.roleName, value: r.roleId, builtin: r.builtin }))
+    }
+  } catch (e) {
+    // 接口失败保留兜底选项，不阻塞页面
   }
 }
 
@@ -270,10 +287,10 @@ function resetFilters() {
 /* ---------- 新增 / 编辑 ---------- */
 const formVisible = ref(false)
 const saving = ref(false)
-const form = reactive({ userId: null, username: '', realName: '', email: '', password: '', roleId: 2, classId: null })
+const form = reactive({ userId: null, username: '', realName: '', email: '', password: '', roleIds: [2], classId: null })
 
 function openCreate() {
-  Object.assign(form, { userId: null, username: '', realName: '', email: '', password: '', roleId: 2, classId: null })
+  Object.assign(form, { userId: null, username: '', realName: '', email: '', password: '', roleIds: [2], classId: null })
   formVisible.value = true
 }
 
@@ -284,7 +301,7 @@ function openEdit(row) {
     realName: row.realName,
     email: row.email || '',
     password: '',
-    roleId: row.roleId,
+    roleIds: (row.roleIds && row.roleIds.length ? row.roleIds : [row.roleId]).filter(Boolean),
     classId: row.classId || null
   })
   formVisible.value = true
@@ -306,7 +323,8 @@ async function saveUser() {
       realName: form.realName.trim(),
       email: form.email.trim(),
       password: form.password,
-      roleId: form.roleId,
+      roleIds: form.roleIds,
+      roleId: form.roleIds?.[0] ?? null,
       classId: form.classId
     }
     const res = form.userId
@@ -618,6 +636,7 @@ async function removeClass(row) {
 }
 
 onMounted(() => {
+  loadRoles()
   loadClasses()
   loadList()
 })

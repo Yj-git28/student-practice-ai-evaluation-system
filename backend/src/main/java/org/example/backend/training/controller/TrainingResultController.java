@@ -32,7 +32,7 @@ public class TrainingResultController {
     }
 
     /** 学生提交实训成果（multipart：trainingId + file），返回 AI 初评结果 */
-    @PreAuthorize("hasRole('STUDENT')")
+    @PreAuthorize("hasAuthority('training:submit')")
     @PostMapping("/submit")
     public R<Map<String, Object>> submit(@RequestParam Long trainingId,
                                          @RequestParam("file") MultipartFile file,
@@ -49,7 +49,7 @@ public class TrainingResultController {
     }
 
     /** 教师人工复核最终成绩 */
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PreAuthorize("hasAuthority('evaluation:review')")
     @PostMapping("/{resultId}/review")
     public R<Void> review(@PathVariable Long resultId, @RequestBody ResultReviewDTO dto,
                           @AuthenticationPrincipal LoginUser user) {

@@ -34,15 +34,17 @@ public class TrainingResultMapper {
         this.jdbc = jdbc;
     }
 
-    public List<Map<String, Object>> page(Long teacherId, Long studentId, int page, int size) {
+    public List<Map<String, Object>> page(Long teacherId, Long studentId, Long classId, int page, int size) {
         StringBuilder sql = new StringBuilder(BASE_SELECT);
         if (teacherId != null) sql.append(" AND t.teacher_id = :teacherId");
         if (studentId != null) sql.append(" AND r.student_id = :studentId");
+        if (classId != null) sql.append(" AND u.class_id = :classId");
         sql.append(" ORDER BY r.submit_time DESC LIMIT :limit OFFSET :offset");
 
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
         if (teacherId != null) spec = spec.param("teacherId", teacherId);
         if (studentId != null) spec = spec.param("studentId", studentId);
+        if (classId != null) spec = spec.param("classId", classId);
 
         return spec.param("limit", size)
                 .param("offset", (long) (page - 1) * size)
@@ -50,19 +52,22 @@ public class TrainingResultMapper {
                 .listOfRows();
     }
 
-    public long count(Long teacherId, Long studentId) {
+    public long count(Long teacherId, Long studentId, Long classId) {
         StringBuilder sql = new StringBuilder("""
                 SELECT COUNT(1)
                 FROM train_result r
                 INNER JOIN training t ON t.training_id = r.training_id
+                LEFT JOIN sys_user u ON u.user_id = r.student_id
                 WHERE 1 = 1
                 """);
         if (teacherId != null) sql.append(" AND t.teacher_id = :teacherId");
         if (studentId != null) sql.append(" AND r.student_id = :studentId");
+        if (classId != null) sql.append(" AND u.class_id = :classId");
 
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
         if (teacherId != null) spec = spec.param("teacherId", teacherId);
         if (studentId != null) spec = spec.param("studentId", studentId);
+        if (classId != null) spec = spec.param("classId", classId);
 
         Integer c = spec.query(Integer.class).single();
         return c == null ? 0 : c;

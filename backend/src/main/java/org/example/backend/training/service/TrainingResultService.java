@@ -67,16 +67,17 @@ public class TrainingResultService {
         if (page < 1) page = 1;
         if (size < 1 || size > 100) size = 10;
 
-        // 数据范围由 sys_role.data_scope 决定：1 全部 → 不过滤；2/3 → 按本人
+        // 数据范围由 sys_role.data_scope 决定：1 全部 → 不过滤；2 本部门 → 按 classId；3 本人 → 按 userId
         Long selfId = dataScopeResolver.forcedUserId(user);
+        Long classId = dataScopeResolver.forcedClassId(user);
         Long teacherId = "TEACHER".equals(user.getRoleCode()) ? selfId : null;
         Long studentId = "STUDENT".equals(user.getRoleCode()) ? selfId : null;
 
         Map<String, Object> result = new LinkedHashMap<>();
-        result.put("total", mapper.count(teacherId, studentId));
+        result.put("total", mapper.count(teacherId, studentId, classId));
         result.put("page", page);
         result.put("size", size);
-        result.put("list", mapper.page(teacherId, studentId, page, size));
+        result.put("list", mapper.page(teacherId, studentId, classId, page, size));
         return result;
     }
 

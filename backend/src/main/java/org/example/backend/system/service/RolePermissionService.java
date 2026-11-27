@@ -1,8 +1,11 @@
 package org.example.backend.system.service;
+
 import org.example.backend.common.BizException;
+import org.example.backend.system.entity.SysRole;
 import org.example.backend.system.log.SysLog;
+import org.example.backend.system.mapper.SysRoleMapper;
 import org.example.backend.system.mapper.SysRolePermissionMapper;
-import org.example.backend.system.mapper.SysUserMapper;
+import org.example.backend.system.mapper.SysUserRoleMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
@@ -15,13 +18,17 @@ import java.util.List;
 public class RolePermissionService {
 
     private final SysRolePermissionMapper rpMapper;
-    private final SysUserMapper userMapper;
+    private final SysUserRoleMapper userRoleMapper;
+    private final SysRoleMapper roleMapper;
     private final PermissionService permissionService;
 
-    public RolePermissionService(SysRolePermissionMapper rpMapper, SysUserMapper userMapper,
-                                 PermissionService permissionService) {
+    public RolePermissionService(SysRolePermissionMapper rpMapper,
+                                  SysUserRoleMapper userRoleMapper,
+                                  SysRoleMapper roleMapper,
+                                  PermissionService permissionService) {
         this.rpMapper = rpMapper;
-        this.userMapper = userMapper;
+        this.userRoleMapper = userRoleMapper;
+        this.roleMapper = roleMapper;
         this.permissionService = permissionService;
     }
 
@@ -29,18 +36,25 @@ public class RolePermissionService {
     @Transactional(rollbackFor = Exception.class)
     public void assignPermissions(Long roleId, List<Long> permissionIds) {
         if (roleId == null) throw new BizException(4001, "角色不能为空");
+        SysRole role = roleMapper.selectById(roleId)
+                .orElseThrow(() -> new BizException(4004, "角色不存在"));
+        // 内置角色（ADMIN/TEACHER/STUDENT）不允许被清空权限，避免误操作锁死系统
+        boolean builtin = role.getBuiltin() != null && role.getBuiltin() == 1;
+        if (builtin && (permissionIds == null || permissionIds.isEmpty())) {
+            throw new BizException(4003, "内置角色不可清空全部权限，请保留必要权限");
+        }
         rpMapper.deleteByRoleId(roleId);
         if (permissionIds != null && !permissionIds.isEmpty()) {
             rpMapper.batchInsert(roleId, List.copyOf(new LinkedHashSet<>(permissionIds)));
         }
-        afterCommit(() -> userMapper.selectUserIdsByRoleId(roleId).forEach(permissionService::evict));
+        afterCommit(() -> userRoleMapper.selectUserIdsByRoleId(roleId).forEach(permissionService::evict));
     }
 
     @SysLog(type = "CHANGE_ROLE", content = "修改用户角色")
     @Transactional(rollbackFor = Exception.class)
     public void changeUserRole(Long userId, Long roleId) {
-        if (userId == null || roleId == null) throw new BizException(4001, "参数不能为空");
-        userMapper.updateRoleId(userId, roleId);
+        if (roleId == null) throw new BizException(4001, "角色不能为空");
+        userRoleMapper.replaceUserRoles(userId, List.of(roleId));
         afterCommit(() -> permissionService.evict(userId));
     }
 

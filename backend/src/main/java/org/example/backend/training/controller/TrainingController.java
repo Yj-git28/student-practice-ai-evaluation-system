@@ -48,7 +48,7 @@ public class TrainingController {
     }
 
     /** 新增实训：教师创建归属自己；ADMIN 可创建公共实训（年级/全校） */
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PreAuthorize("hasAuthority('training:add')")
     @PostMapping
     public R<Long> create(@RequestBody TrainingSaveDTO dto,
                           @AuthenticationPrincipal LoginUser user) {
@@ -56,7 +56,7 @@ public class TrainingController {
     }
 
     /** 编辑实训：所属教师或管理员 */
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PreAuthorize("hasAuthority('training:edit')")
     @PutMapping("/{trainingId}")
     public R<Void> update(@PathVariable Long trainingId, @RequestBody TrainingSaveDTO dto,
                           @AuthenticationPrincipal LoginUser user) {
@@ -65,7 +65,7 @@ public class TrainingController {
     }
 
     /** 删除实训（级联删除成果）：仅管理员或该实训所属教师 */
-    @PreAuthorize("hasAnyRole('TEACHER','ADMIN')")
+    @PreAuthorize("hasAuthority('training:remove')")
     @DeleteMapping("/{trainingId}")
     public R<Void> delete(@PathVariable Long trainingId,
                           @AuthenticationPrincipal LoginUser user) {

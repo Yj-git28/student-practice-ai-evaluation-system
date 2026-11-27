@@ -25,7 +25,7 @@
         </el-checkbox-group>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="saving" @click="saveConfig">保存系统配置</el-button>
+        <el-button type="primary" :loading="saving" v-has-perm="'config:update'" @click="saveConfig">保存系统配置</el-button>
       </el-form-item>
     </el-form>
     <el-divider>系统操作日志查询</el-divider>

@@ -73,7 +73,7 @@ public class SysUserMapper {
                 .optional();
     }
 
-    /** 按 userId 查角色（单角色模型，最多 1 行）。数据范围来自 sys_role.data_scope，不再按 roleCode 硬编码 */
+    /** 主角色（冗余列 sys_user.role_id），用于 JWT 与单值展示；全部角色见 SysUserRoleMapper */
     public Optional<SysRole> selectRoleByUserId(Long userId) {
         return jdbc.sql("""
                 SELECT r.role_id, r.role_name, r.role_code, r.data_scope
@@ -86,15 +86,19 @@ public class SysUserMapper {
                 .optional();
     }
 
-    /** 管理员用户列表：联表角色名、班级名、年级，支持关键词/角色/年级/班级筛选 */
+    /** 管理员用户列表：联表角色名/班级名/年级，多角色聚合展示，支持关键词/角色/年级/班级筛选 */
     public java.util.List<java.util.Map<String, Object>> selectUserList(String keyword, Long roleId,
                                                                          String grade, Long classId) {
         StringBuilder sql = new StringBuilder("""
                 SELECT u.user_id AS userId, u.username, u.real_name AS realName, u.email,
-                       u.role_id AS roleId, u.status, r.role_name AS roleName,
+                       u.role_id AS roleId, u.status,
+                       GROUP_CONCAT(DISTINCT r.role_name SEPARATOR ',') AS roleName,
+                       GROUP_CONCAT(DISTINCT r.role_code SEPARATOR ',') AS roleCode,
+                       GROUP_CONCAT(DISTINCT ur.role_id SEPARATOR ',') AS roleIds,
                        u.class_id AS classId, c.class_name AS className, c.grade
                 FROM sys_user u
-                LEFT JOIN sys_role r ON r.role_id = u.role_id
+                LEFT JOIN sys_user_role ur ON ur.user_id = u.user_id
+                LEFT JOIN sys_role r ON r.role_id = ur.role_id
                 LEFT JOIN class c ON c.class_id = u.class_id
                 WHERE u.deleted = 0
                 """);
@@ -104,7 +108,7 @@ public class SysUserMapper {
             params.put("kw", "%" + keyword.trim() + "%");
         }
         if (roleId != null) {
-            sql.append(" AND u.role_id = :roleId");
+            sql.append(" AND EXISTS (SELECT 1 FROM sys_user_role ur2 WHERE ur2.user_id = u.user_id AND ur2.role_id = :roleId)");
             params.put("roleId", roleId);
         }
         if (classId != null) {
@@ -114,7 +118,7 @@ public class SysUserMapper {
             sql.append(" AND c.grade = :grade");
             params.put("grade", grade);
         }
-        sql.append(" ORDER BY u.user_id");
+        sql.append(" GROUP BY u.user_id ORDER BY u.user_id");
         JdbcClient.StatementSpec spec = jdbc.sql(sql.toString());
         for (java.util.Map.Entry<String, Object> e : params.entrySet()) {
             spec = spec.param(e.getKey(), e.getValue());
@@ -129,9 +133,9 @@ public class SysUserMapper {
                 .list();
     }
 
-    /** 权限变更后按角色反查受影响用户，用于精准清缓存 */
+    /** 权限变更后按角色反查受影响用户，用于精准清缓存（走多对多关联表） */
     public java.util.List<Long> selectUserIdsByRoleId(Long roleId) {
-        return jdbc.sql("SELECT user_id FROM sys_user WHERE role_id = :roleId")
+        return jdbc.sql("SELECT user_id FROM sys_user_role WHERE role_id = :roleId")
                 .param("roleId", roleId)
                 .query(Long.class)
                 .list();
@@ -148,10 +152,10 @@ public class SysUserMapper {
                 .param("pwd", encoded).param("userId", userId).update();
     }
 
-    /** 管理员给用户改角色：单角色模型下就是一条 UPDATE */
-    public void updateRoleId(Long userId, Long roleId) {
-        jdbc.sql("UPDATE sys_user SET role_id = :roleId WHERE user_id = :userId")
-                .param("roleId", roleId).param("userId", userId).update();
+    /** 绑定/换绑邮箱 */
+    public void updateEmail(Long userId, String email) {
+        jdbc.sql("UPDATE sys_user SET email = :e WHERE user_id = :id")
+                .param("e", email).param("id", userId).update();
     }
 
     public boolean existsByEmail(String email) {
@@ -166,7 +170,7 @@ public class SysUserMapper {
         return c != null && c > 0;
     }
 
-    /** 注册/新增用户：默认启用、未删除；邮箱、班级允许为空（空串写入 NULL，避免唯一索引冲突） */
+    /** 注册/新增用户：默认启用、未删除；主角色写入冗余列，多角色关联由 Service 同步 */
     public void insertUser(String username, String encodedPassword, String realName, String email,
                            int roleId, Long classId) {
         jdbc.sql("""
@@ -179,7 +183,7 @@ public class SysUserMapper {
                 .update();
     }
 
-    /** 管理员编辑用户：账号不可改，其余可改 */
+    /** 编辑用户基础资料；主角色冗余列同步为传入主角色，关联表由 Service 重写 */
     public void updateUser(Long userId, String realName, String email, Long roleId, Long classId) {
         jdbc.sql("""
                 UPDATE sys_user
@@ -192,9 +196,11 @@ public class SysUserMapper {
                 .update();
     }
 
-    /** 逻辑删除：同时清空会话，旧 token 立即失效 */
+    /** 逻辑删除：同时清空会话与角色关联，旧 token 立即失效 */
     public void logicalDelete(Long userId) {
         jdbc.sql("UPDATE sys_user SET deleted = 1, current_jti = NULL WHERE user_id = :id")
+                .param("id", userId).update();
+        jdbc.sql("DELETE FROM sys_user_role WHERE user_id = :id")
                 .param("id", userId).update();
     }
 
@@ -206,16 +212,28 @@ public class SysUserMapper {
         return c != null && c > 0;
     }
 
-    /** 统计有效管理员数量，用于阻止删掉最后一个管理员 */
+    /** 统计有效管理员数量：绑定 ADMIN 角色的启用账号，用于阻止删掉最后一个管理员 */
     public int countActiveAdmins() {
-        Integer c = jdbc.sql("SELECT COUNT(1) FROM sys_user WHERE role_id = 3 AND status = 1 AND deleted = 0")
+        Integer c = jdbc.sql("""
+                SELECT COUNT(DISTINCT u.user_id)
+                FROM sys_user u
+                JOIN sys_user_role ur ON ur.user_id = u.user_id
+                JOIN sys_role r ON r.role_id = ur.role_id AND r.role_code = 'ADMIN'
+                WHERE u.status = 1 AND u.deleted = 0
+                """)
                 .query(Integer.class).single();
         return c == null ? 0 : c;
     }
 
-    /** 绑定/换绑邮箱 */
-    public void updateEmail(Long userId, String email) {
-        jdbc.sql("UPDATE sys_user SET email = :e WHERE user_id = :id")
-                .param("e", email).param("id", userId).update();
+    /** 判断用户是否绑定了 ADMIN 角色 */
+    public boolean hasAdminRole(Long userId) {
+        Integer c = jdbc.sql("""
+                SELECT COUNT(1)
+                FROM sys_user_role ur
+                JOIN sys_role r ON r.role_id = ur.role_id AND r.role_code = 'ADMIN'
+                WHERE ur.user_id = :id
+                """)
+                .param("id", userId).query(Integer.class).single();
+        return c != null && c > 0;
     }
 }

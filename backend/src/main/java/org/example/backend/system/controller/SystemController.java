@@ -88,7 +88,7 @@ public class SystemController {
 
     /** 仅 ADMIN：新增账号 */
     @SysLog(type = "USER_CREATE", content = "新增账号")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:add')")
     @PostMapping("/users")
     public R<String> createUser(@RequestBody UserSaveDTO dto) {
         userAdminService.create(dto);
@@ -97,7 +97,7 @@ public class SystemController {
 
     /** 仅 ADMIN：编辑账号（账号名不可改） */
     @SysLog(type = "USER_UPDATE", content = "编辑账号")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:edit')")
     @PutMapping("/users/{id}")
     public R<String> updateUser(@PathVariable Long id, @RequestBody UserSaveDTO dto,
                                 @AuthenticationPrincipal LoginUser current) {
@@ -107,7 +107,7 @@ public class SystemController {
 
     /** 仅 ADMIN：重置为默认密码，并踢掉该账号现有登录 */
     @SysLog(type = "USER_RESET_PWD", content = "重置密码")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:resetpwd')")
     @PostMapping("/users/{id}/reset-password")
     public R<Map<String, Object>> resetPassword(@PathVariable Long id) {
         String password = userAdminService.resetPassword(id);
@@ -116,7 +116,7 @@ public class SystemController {
 
     /** 仅 ADMIN：删除账号（逻辑删除，不能删自己、不能删最后一个管理员） */
     @SysLog(type = "USER_DELETE", content = "删除账号")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:remove')")
     @DeleteMapping("/users/{id}")
     public R<String> deleteUser(@PathVariable Long id, @AuthenticationPrincipal LoginUser current) {
         userAdminService.delete(id, current == null ? null : current.getUserId());
@@ -125,7 +125,7 @@ public class SystemController {
 
     /** 仅 ADMIN：批量导入账号，返回成功数与失败明细 */
     @SysLog(type = "USER_IMPORT", content = "批量导入账号")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('user:import')")
     @PostMapping("/users/import")
     public R<Map<String, Object>> importUsers(@RequestBody List<UserSaveDTO> rows) {
         return R.ok(userAdminService.importUsers(rows));
@@ -140,7 +140,7 @@ public class SystemController {
 
     /** 仅 ADMIN：新增班级 */
     @SysLog(type = "CLASS_CREATE", content = "新增班级")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('class:add')")
     @PostMapping("/classes")
     public R<String> createClass(@RequestBody ClassSaveDTO dto) {
         classService.create(dto);
@@ -149,7 +149,7 @@ public class SystemController {
 
     /** 仅 ADMIN：修改班级（名称、年级） */
     @SysLog(type = "CLASS_UPDATE", content = "编辑班级")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('class:edit')")
     @PutMapping("/classes/{id}")
     public R<String> updateClass(@PathVariable Long id, @RequestBody ClassSaveDTO dto) {
         classService.update(id, dto);
@@ -158,7 +158,7 @@ public class SystemController {
 
     /** 仅 ADMIN：删除班级（班级下仍有账号时拒绝） */
     @SysLog(type = "CLASS_DELETE", content = "删除班级")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('class:remove')")
     @DeleteMapping("/classes/{id}")
     public R<String> deleteClass(@PathVariable Long id) {
         classService.delete(id);
@@ -195,7 +195,7 @@ public class SystemController {
 
     /** 仅 ADMIN：保存系统参数配置 */
     @SysLog(type = "CONFIG_SAVE", content = "保存系统配置")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('config:update')")
     @PostMapping("/config")
     public R<Void> saveConfig(@RequestBody SystemConfigDTO dto) {
         systemConfigService.save(dto);

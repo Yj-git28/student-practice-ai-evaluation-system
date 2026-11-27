@@ -5,7 +5,7 @@ public final class DataScope {
 
     /** 1 全部数据 */
     public static final int ALL = 1;
-    /** 2 本部门（现有表只有 class_id，未接班级维度前降级为本人） */
+    /** 2 本部门（按 sys_user.class_id 班级维度过滤） */
     public static final int DEPT = 2;
     /** 3 本人 */
     public static final int SELF = 3;

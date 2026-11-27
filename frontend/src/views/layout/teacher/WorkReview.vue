@@ -50,7 +50,7 @@
       </el-table-column>
       <el-table-column label="操作" width="110" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openReview(row)">人工复核</el-button>
+          <el-button link type="primary" v-has-perm="'evaluation:review'" @click="openReview(row)">人工复核</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -92,7 +92,7 @@
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="saveReview">确认保存最终成绩</el-button>
+        <el-button type="primary" :loading="saving" v-has-perm="'evaluation:review'" @click="saveReview">确认保存最终成绩</el-button>
       </template>
     </el-dialog>
   </el-card>

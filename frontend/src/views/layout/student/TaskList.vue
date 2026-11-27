@@ -24,7 +24,7 @@
       </el-table-column>
       <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :disabled="isExpired(row)" @click="goSubmit(row)">
+          <el-button link type="primary" :disabled="isExpired(row)" v-has-perm="'training:submit'" @click="goSubmit(row)">
             提交成果
           </el-button>
           <span v-if="isExpired(row)" class="expired-tip">已过截止时间</span>
